@@ -2466,3 +2466,19 @@ body {
     border: 1px solid rgba(255, 51, 51, 0.3);
     color: #ff5555;
 }
+
+/* === RETURNING PLAYER === */
+.returning-player-info {
+    text-align: center;
+    margin-bottom: 1rem;
+}
+.returning-player-info .welcome-back {
+    font-family: 'Cinzel', serif;
+    font-size: 1.2rem;
+    color: var(--ember-orange);
+}
+.returning-player-info .char-preview {
+    color: var(--starsilver-silver);
+    font-size: 0.85rem;
+    margin-top: 0.25rem;
+}

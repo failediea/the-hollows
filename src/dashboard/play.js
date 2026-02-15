@@ -169,17 +169,58 @@ async function connectWallet() {
         document.getElementById('connectWalletBtn').disabled = true;
         document.getElementById('enterBtn').classList.remove('hidden');
 
+        // Check if this wallet already has a character
+        try {
+            const checkRes = await fetch(`${API}/enter-wallet`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ walletAddress: state.walletAddress, checkOnly: true }),
+            });
+            const checkData = await checkRes.json();
+
+            if (checkRes.ok && checkData.agent) {
+                showReturningPlayerUI(checkData.agent);
+                return;
+            }
+        } catch (checkErr) {
+            // Non-fatal — fall through to normal new-player flow
+            console.warn('Returning player check failed:', checkErr);
+        }
+
     } catch (e) {
         err.textContent = e.message || 'Failed to connect wallet';
     }
 }
 
+function showReturningPlayerUI(agent) {
+    state.returningAgent = agent;
+
+    // Hide name input
+    document.querySelector('.form-group').style.display = 'none';
+
+    // Show welcome-back info
+    const info = document.createElement('div');
+    info.className = 'returning-player-info';
+    info.innerHTML = `
+        <p class="welcome-back">Welcome back, <strong>${agent.name}</strong></p>
+        <p class="char-preview">Level ${agent.stats?.level || '?'} · ${agent.zone || 'The Gate'}</p>
+    `;
+    document.querySelector('.login-form').insertBefore(info, document.getElementById('walletInfo'));
+
+    // Update button
+    const enterBtn = document.getElementById('enterBtn');
+    enterBtn.textContent = '⚔️ Resume Adventure';
+    enterBtn.classList.remove('hidden');
+}
+
 async function enterGame() {
     const err = document.getElementById('loginError');
     err.textContent = '';
-    const name = document.getElementById('nameInput').value.trim();
+    const name = state.returningAgent
+        ? state.returningAgent.name
+        : document.getElementById('nameInput').value.trim();
 
-    if (!name) { err.textContent = 'Enter a name'; return; }
+    if (!name && !state.returningAgent) { err.textContent = 'Enter a name'; return; }
     if (!state.walletAddress) { err.textContent = 'Connect wallet first'; return; }
 
     try {
