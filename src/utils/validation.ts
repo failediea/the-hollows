@@ -3,11 +3,11 @@ import { Context } from 'hono';
 import { createPublicClient, http, defineChain } from 'viem';
 import { Agent } from '../db/schema.js';
 
-const monadTestnet = defineChain({
-  id: 10143,
-  name: 'Monad Testnet',
+const monadMainnet = defineChain({
+  id: 143,
+  name: 'Monad Mainnet',
   nativeCurrency: { name: 'MON', symbol: 'MON', decimals: 18 },
-  rpcUrls: { default: { http: ['https://monad-testnet.drpc.org'] } },
+  rpcUrls: { default: { http: ['https://rpc.monad.xyz'] } },
 });
 
 const TREASURY_ADDRESS = '0x23d916bd5c4c5a88e2ee1ee124ca320902f79820' as const;
@@ -18,7 +18,7 @@ const TREASURY_ADDRESS = '0x23d916bd5c4c5a88e2ee1ee124ca320902f79820' as const;
  */
 export async function verifyEntryPayment(walletAddress: string, db: Database.Database): Promise<{ paid: boolean; error?: string }> {
   try {
-    const publicClient = createPublicClient({ chain: monadTestnet, transport: http() });
+    const publicClient = createPublicClient({ chain: monadMainnet, transport: http() });
     const onChainEntries = await publicClient.readContract({
       address: TREASURY_ADDRESS,
       abi: [{
@@ -34,7 +34,7 @@ export async function verifyEntryPayment(walletAddress: string, db: Database.Dat
     const serverCount = db.prepare('SELECT COUNT(*) as cnt FROM agents WHERE LOWER(wallet_address) = ?')
       .get(walletAddress.toLowerCase()) as { cnt: number };
     if (Number(onChainEntries) <= serverCount.cnt) {
-      return { paid: false, error: 'Entry fee not paid on-chain. Pay 0.01 MON to the treasury contract first.' };
+      return { paid: false, error: 'Entry fee not paid on-chain. Pay 10 MON to the treasury contract first.' };
     }
     return { paid: true };
   } catch (error) {

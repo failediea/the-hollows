@@ -11,10 +11,10 @@ import { defineChain } from 'viem';
 import * as fs from 'fs';
 import * as path from 'path';
 
-// Define Monad Testnet
-const monadTestnet = defineChain({
-  id: 10143,
-  name: 'Monad Testnet',
+// Define Monad Mainnet
+const monadMainnet = defineChain({
+  id: 143,
+  name: 'Monad Mainnet',
   nativeCurrency: {
     decimals: 18,
     name: 'Monad',
@@ -22,13 +22,12 @@ const monadTestnet = defineChain({
   },
   rpcUrls: {
     default: {
-      http: ['https://monad-testnet.drpc.org'],
+      http: ['https://rpc.monad.xyz'],
     },
     public: {
-      http: ['https://monad-testnet.drpc.org'],
+      http: ['https://rpc.monad.xyz'],
     },
   },
-  testnet: true,
 });
 
 // Load deployment info
@@ -125,7 +124,7 @@ async function main() {
 
   // Create public client
   const publicClient = createPublicClient({
-    chain: monadTestnet,
+    chain: monadMainnet,
     transport: http(),
   });
 
@@ -200,7 +199,7 @@ async function enterHollows(publicClient: any) {
   
   const walletClient = createWalletClient({
     account,
-    chain: monadTestnet,
+    chain: monadMainnet,
     transport: http(),
   });
 
@@ -277,7 +276,7 @@ async function createWager(publicClient: any, opponent: string, amount: string) 
   
   const walletClient = createWalletClient({
     account,
-    chain: monadTestnet,
+    chain: monadMainnet,
     transport: http(),
   });
 

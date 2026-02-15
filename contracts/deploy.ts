@@ -19,10 +19,10 @@ dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Define Monad Testnet
-const monadTestnet = defineChain({
-  id: 10143,
-  name: 'Monad Testnet',
+// Define Monad Mainnet
+const monadMainnet = defineChain({
+  id: 143,
+  name: 'Monad Mainnet',
   nativeCurrency: {
     decimals: 18,
     name: 'Monad',
@@ -30,22 +30,21 @@ const monadTestnet = defineChain({
   },
   rpcUrls: {
     default: {
-      http: ['https://monad-testnet.drpc.org'],
+      http: ['https://rpc.monad.xyz'],
     },
     public: {
-      http: ['https://monad-testnet.drpc.org'],
+      http: ['https://rpc.monad.xyz'],
     },
   },
   blockExplorers: {
-    default: { name: 'Monad Explorer', url: 'https://explorer.monad.xyz' },
+    default: { name: 'Monad Explorer', url: 'https://monadscan.com' },
   },
-  testnet: true,
 });
 
-const INITIAL_ENTRY_FEE = parseEther('0.01'); // 0.01 MON initial entry fee
+const INITIAL_ENTRY_FEE = parseEther('10'); // 10 MON initial entry fee
 
 async function main() {
-  console.log('🌑 Deploying HollowsTreasury to Monad Testnet...\n');
+  console.log('🌑 Deploying HollowsTreasury to Monad Mainnet...\n');
 
   // Check if contract is compiled
   const artifactsPath = path.join(__dirname, 'artifacts', 'HollowsTreasury.json');
@@ -75,13 +74,13 @@ async function main() {
 
   // Create clients
   const publicClient = createPublicClient({
-    chain: monadTestnet,
+    chain: monadMainnet,
     transport: http(),
   });
 
   const walletClient = createWalletClient({
     account,
-    chain: monadTestnet,
+    chain: monadMainnet,
     transport: http(),
   });
 
@@ -111,13 +110,13 @@ async function main() {
   if (receipt.status === 'success') {
     console.log('✅ Contract deployed successfully!');
     console.log(`📍 Contract address: ${receipt.contractAddress}`);
-    console.log(`🔗 Explorer: https://explorer.monad.xyz/address/${receipt.contractAddress}`);
+    console.log(`🔗 Explorer: https://monadscan.com/address/${receipt.contractAddress}`);
     console.log(`⚙️  Initial entry fee: ${formatEther(INITIAL_ENTRY_FEE)} MON`);
     
     // Save deployment info
     const deploymentInfo = {
-      network: 'monad-testnet',
-      chainId: 10143,
+      network: 'monad-mainnet',
+      chainId: 143,
       contractAddress: receipt.contractAddress,
       deployer: account.address,
       transactionHash: hash,

@@ -3,9 +3,9 @@
    ============================================ */
 
 const API = window.location.origin;
-const MONAD_RPC = 'https://monad-testnet.drpc.org';
-const MONAD_CHAIN_ID = 10143;
-const TREASURY_ADDRESS = '0x23d916bd5c4c5a88e2ee1ee124ca320902f79820';
+const MONAD_RPC = 'https://rpc.monad.xyz';
+const MONAD_CHAIN_ID = 143;
+const TREASURY_ADDRESS = '0x23d916bd5c4c5a88e2ee1ee124ca320902f79820'; // TODO: Update after mainnet deployment
 const TREASURY_ABI = [
     'function enter() external payable',
     'function entryFee() external view returns (uint256)',
@@ -133,7 +133,7 @@ async function connectWallet() {
         const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
         state.walletAddress = accounts[0];
 
-        // Switch to Monad testnet
+        // Switch to Monad Mainnet
         try {
             await window.ethereum.request({
                 method: 'wallet_switchEthereumChain',
@@ -145,7 +145,7 @@ async function connectWallet() {
                     method: 'wallet_addEthereumChain',
                     params: [{
                         chainId: '0x' + MONAD_CHAIN_ID.toString(16),
-                        chainName: 'Monad Testnet',
+                        chainName: 'Monad Mainnet',
                         rpcUrls: [MONAD_RPC],
                         nativeCurrency: { name: 'MON', symbol: 'MON', decimals: 18 },
                     }],
@@ -226,15 +226,15 @@ async function enterGame() {
             signature = await state.signer.signMessage(msg);
         }
 
-        // Step 2: No existing character — pay 0.01 MON entry fee (if not already paid)
+        // Step 2: No existing character — pay 10 MON entry fee (if not already paid)
         const feeKey = `hollows_fee_paid_${state.walletAddress.toLowerCase()}`;
         const alreadyPaid = localStorage.getItem(feeKey);
 
         if (!alreadyPaid && state.signer && window.ethers) {
             try {
-                err.textContent = 'Paying 0.01 MON entry fee...';
+                err.textContent = 'Paying 10 MON entry fee...';
                 const treasury = new ethers.Contract(TREASURY_ADDRESS, TREASURY_ABI, state.signer);
-                const tx = await treasury.enter({ value: ethers.parseEther('0.01') });
+                const tx = await treasury.enter({ value: ethers.parseEther('10') });
                 await tx.wait();
                 localStorage.setItem(feeKey, Date.now().toString());
                 err.textContent = '';
@@ -1116,7 +1116,7 @@ function renderChain() {
                 <h3>💳 Wallet</h3>
                 <div style="font-size:11px;color:var(--starsilver-silver);font-family:monospace">${state.walletAddress}</div>
                 <div class="chain-balance" id="chainBalance">Loading...</div>
-                <div style="font-size:11px;color:var(--starsilver-silver)">Monad Testnet (Chain ID: ${MONAD_CHAIN_ID})</div>
+                <div style="font-size:11px;color:var(--starsilver-silver)">Monad Mainnet (Chain ID: ${MONAD_CHAIN_ID})</div>
             </div>
         `;
     }
@@ -1126,12 +1126,12 @@ function renderChain() {
         <div class="chain-section">
             <h3>🏦 Treasury Contract</h3>
             <p style="font-size:12px;color:var(--starsilver-silver);margin-bottom:6px">Contract: <span style="font-family:monospace;font-size:10px">${TREASURY_ADDRESS}</span></p>
-            <p style="font-size:12px;color:var(--gold)">✅ 0.01 MON entry fee is live on Monad testnet</p>
+            <p style="font-size:12px;color:var(--gold)">✅ 10 MON entry fee is live on Monad Mainnet</p>
         </div>
         <div class="chain-section">
             <h3>📊 On-Chain Features</h3>
             <ul style="font-size:12px;color:var(--starsilver-silver);list-style:none;line-height:2">
-                <li>✅ 0.01 MON entry fee</li>
+                <li>✅ 10 MON entry fee</li>
                 <li>⏳ Season prize pool distribution</li>
                 <li>⏳ NFT loot drops for legendary items</li>
                 <li>⏳ Cross-season prestige tracking</li>

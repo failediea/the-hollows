@@ -55,7 +55,7 @@ export function createEntryRoutes(db: Database.Database) {
         return c.json({ error: 'No active season' }, 500);
       }
 
-      // Verify on-chain payment (each registration requires a new 0.01 MON payment)
+      // Verify on-chain payment (each registration requires a new 10 MON payment)
       const { verifyEntryPayment } = await import('../utils/validation.js');
       const paymentCheck = await verifyEntryPayment(walletAddress, db);
       if (!paymentCheck.paid) {

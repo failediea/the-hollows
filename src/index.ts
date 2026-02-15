@@ -259,7 +259,7 @@ app.get('/', (c) => {
 });
 
 // Wallet-based entry for human players
-const MONAD_CHAIN_ID = 10143;
+const MONAD_CHAIN_ID = 143;
 
 app.post('/enter-wallet', async (c) => {
   try {
