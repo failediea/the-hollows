@@ -1,0 +1,78 @@
+/* ============================================
+   Combat Theme — Shared Design Tokens
+   Aligned with dashboard play.css aesthetic
+   ============================================ */
+
+:root {
+  /* Colors */
+  --void-black: #0a0a0f;
+  --deep-black: #12121a;
+  --stone-gray: #1a1a24;
+  --ember-orange: #ff6b35;
+  --flame-red: #ff3333;
+  --gold: #ffd700;
+  --bone-white: #e8dcc4;
+  --corruption-purple: #8b5cf6;
+  --panel-bg: rgba(18, 18, 26, 0.92);
+  --panel-border: rgba(255, 107, 53, 0.25);
+  --safe-green: #4ade80;
+  --stamina-blue: #3b82f6;
+  --warning-amber: #f59e0b;
+  --muted: #888;
+  --muted-dim: #666;
+
+  /* Typography */
+  --font-title: 'MedievalSharp', cursive;
+  --font-ui: 'Cinzel', serif;
+
+  /* Spacing */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 12px;
+  --space-lg: 16px;
+  --space-xl: 24px;
+
+  /* Radius */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-pill: 20px;
+
+  /* Shadows & Glows */
+  --glow-ember: 0 0 12px rgba(255, 107, 53, 0.3);
+  --glow-red: 0 0 10px rgba(255, 51, 51, 0.4);
+  --glow-green: 0 0 10px rgba(74, 222, 128, 0.4);
+  --glow-gold: 0 0 10px rgba(255, 215, 0, 0.5);
+
+  /* Motion */
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.25s ease;
+  --transition-slow: 0.5s ease;
+
+  /* Focus */
+  --focus-ring: 0 0 0 2px rgba(255, 107, 53, 0.5);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--void-black);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--ember-orange);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #ff8c42;
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--ember-orange) var(--void-black);
+}

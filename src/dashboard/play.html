@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Hollows - Descend into Darkness</title>
+    <link rel="icon" type="image/png" sizes="256x256" href="/assets/accountpic.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/accountpic.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=MedievalSharp&family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/play/play.css">
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6.9.0/dist/ethers.umd.min.js"></script>
+</head>
+<body>
+    <!-- EMBER PARTICLES -->
+    <div id="embers" class="embers-container"></div>
+
+    <!-- COMBAT OVERLAY -->
+    <div id="combatOverlay" class="combat-overlay hidden">
+        <div class="combat-arena" id="combatArena">
+            <h2 class="combat-title">⚔️ COMBAT ⚔️</h2>
+            <div class="combat-fighters" id="combatFighters">
+                <div class="fighter fighter-player">
+                    <div class="fighter-name" id="combatPlayerName"></div>
+                    <div class="fighter-sprite">🗡️</div>
+                    <div class="fighter-hp-bar"><div class="fighter-hp-fill hp-high" id="combatPlayerHp"></div></div>
+                </div>
+                <div class="combat-vs">VS</div>
+                <div class="fighter fighter-mob">
+                    <div class="fighter-name" id="combatMobName"></div>
+                    <img id="combatMobImg" class="combat-mob-img" src="" alt="" style="display:none;">
+                    <div class="fighter-sprite" id="combatMobEmoji">👹</div>
+                    <div class="fighter-hp-bar"><div class="fighter-hp-fill mob-hp" id="combatMobHp"></div></div>
+                </div>
+            </div>
+            <div class="combat-log" id="combatLog"></div>
+            <!-- Result overlay injected by JS -->
+            <div id="combatResultContainer"></div>
+        </div>
+    </div>
+
+    <!-- GATE BOSS MODAL -->
+    <div id="gateBossOverlay" class="riddle-overlay hidden">
+        <div class="riddle-box" style="border-color: var(--flame-red);">
+            <h2 style="color: var(--flame-red);">⚔️ Gate Boss Encountered!</h2>
+            <p class="riddle-text" id="gateBossName"></p>
+            <p id="gateBossDesc" style="color: var(--starsilver-silver); font-size: 12px; margin-bottom: 16px;"></p>
+            <div class="riddle-actions">
+                <button class="btn btn-ember" id="gateBossFightBtn">⚔️ Fight to Unlock Passage</button>
+                <button class="btn btn-muted" onclick="closeGateBoss()">Turn Back</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- LOGIN SCREEN -->
+    <div id="loginScreen" class="login-screen">
+        <div class="login-box">
+            <div class="login-logo">
+                <img src="/assets/logo.png" alt="The Hollows" style="max-width: 320px; width: 90%; height: auto; margin-bottom: 0.5rem;">
+                <p class="login-subtitle">Descend into Darkness</p>
+            </div>
+            <div class="login-form">
+                <div class="form-group">
+                    <label>Name your champion</label>
+                    <input type="text" id="nameInput" placeholder="Enter a name..." autocomplete="off" maxlength="20">
+                </div>
+                <button id="connectWalletBtn" class="btn btn-wallet" onclick="connectWallet()">
+                    <span class="wallet-icon">💳</span> CONNECT WALLET
+                </button>
+                <div id="walletInfo" class="wallet-info hidden">
+                    <span class="wallet-addr" id="walletAddr"></span>
+                    <span class="wallet-bal" id="walletBal"></span>
+                </div>
+                <button id="enterBtn" class="btn btn-enter hidden" onclick="enterGame()">
+                    ⚔️ Enter The Hollows
+                </button>
+                <p id="loginError" class="error-text"></p>
+            </div>
+            <div class="login-footer">
+                <span>Monad Testnet</span> · <span>On-chain Dark Fantasy</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- GAME SCREEN -->
+    <div id="gameScreen" class="game-screen hidden">
+        <!-- Top Bar -->
+        <header class="top-bar">
+            <div class="top-left">
+                <span class="game-logo">💀</span>
+                <span class="game-title">THE HOLLOWS</span>
+            </div>
+            <div class="top-center">
+                <div class="tab-nav" id="headerTabNav">
+                    <button class="tab-btn active" data-tab="zone" onclick="switchTab('zone')">🗺️ Zone</button>
+                    <button class="tab-btn" data-tab="map" onclick="switchTab('map')">🏔️ Map</button>
+                    <button class="tab-btn" data-tab="shop" onclick="switchTab('shop')">🏪 Shop</button>
+                    <button class="tab-btn" data-tab="guild" onclick="switchTab('guild')">👥 Guild</button>
+                    <button class="tab-btn" data-tab="boss" onclick="switchTab('boss')">🔥 Ashborn</button>
+                    <button class="tab-btn" data-tab="pvp" onclick="switchTab('pvp')">⚔️ PvP</button>
+                    <button class="tab-btn" data-tab="craft" onclick="switchTab('craft'); renderCraftTab()">🔨 Craft</button>
+                    <button class="tab-btn" data-tab="market" onclick="switchTab('market'); renderMarketTab()">🏪 Market</button>
+                    <button class="tab-btn" data-tab="skills" onclick="switchTab('skills'); renderSkillsTab()">🌟 Skills</button>
+                    <button class="tab-btn" data-tab="quests" onclick="switchTab('quests'); renderQuestsTab()">📜 Quests</button>
+                    <button class="tab-btn" data-tab="chain" onclick="switchTab('chain')">⛓️ Chain</button>
+                    <button class="tab-btn" data-tab="leaderboard" onclick="switchTab('leaderboard')">🏆 Ranks</button>
+                </div>
+            </div>
+            <div class="top-right">
+                <span id="topWallet" class="top-wallet"></span>
+                <button class="btn-icon" onclick="logout()" title="Logout">🚪</button>
+            </div>
+        </header>
+
+        <!-- Main Layout -->
+        <div class="game-layout">
+            <!-- LEFT: Character Panel -->
+            <aside class="panel panel-left">
+                <div class="char-header">
+                    <img id="charAvatar" class="char-avatar" src="/assets/accountpic.png" alt="Avatar" />
+                    <h2 id="charName" class="char-name"></h2>
+                    <span id="charLevel" class="char-level"></span>
+                </div>
+
+                <!-- HP Bar -->
+                <div class="stat-bar-group">
+                    <label>❤️ HP</label>
+                    <div class="stat-bar">
+                        <div class="stat-bar-fill hp-fill" id="hpBar"></div>
+                        <span class="stat-bar-text" id="hpText"></span>
+                    </div>
+                </div>
+
+                <!-- XP Bar -->
+                <div class="stat-bar-group">
+                    <label>⭐ XP</label>
+                    <div class="stat-bar">
+                        <div class="stat-bar-fill xp-fill" id="xpBar"></div>
+                        <span class="stat-bar-text" id="xpText"></span>
+                    </div>
+                </div>
+
+                <!-- Corruption -->
+                <div class="stat-bar-group">
+                    <label>😈 Corruption</label>
+                    <div class="stat-bar">
+                        <div class="stat-bar-fill corruption-fill" id="corruptionBar"></div>
+                        <span class="stat-bar-text" id="corruptionText"></span>
+                    </div>
+                </div>
+
+                <!-- Stats Grid -->
+                <div class="stats-grid">
+                    <div class="stat-item"><span class="stat-icon">⚔️</span><span class="stat-label">ATK</span><span class="stat-value" id="statAtk">0</span></div>
+                    <div class="stat-item"><span class="stat-icon">🛡️</span><span class="stat-label">DEF</span><span class="stat-value" id="statDef">0</span></div>
+                    <div class="stat-item"><span class="stat-icon">💨</span><span class="stat-label">SPD</span><span class="stat-value" id="statSpd">0</span></div>
+                    <div class="stat-item"><span class="stat-icon">🍀</span><span class="stat-label">LUCK</span><span class="stat-value" id="statLuck">0</span></div>
+                </div>
+
+                <!-- Gold -->
+                <div class="gold-display">
+                    <span class="gold-icon">💰</span>
+                    <span class="gold-amount" id="goldAmount">0</span>
+                    <span class="gold-label">Gold</span>
+                </div>
+
+                <!-- Status -->
+                <div class="char-status" id="charStatus"></div>
+
+                <!-- Equipment Slots -->
+                <div class="section-header">⚔️ Equipment</div>
+                <div class="equip-slots" id="equipSlots">
+                    <div class="equip-slot" id="slotWeapon" data-slot="weapon">
+                        <div class="equip-slot-label">🗡️ Weapon</div>
+                        <div class="equip-slot-item" id="slotWeaponItem">Empty</div>
+                    </div>
+                    <div class="equip-slot" id="slotWeapon2" data-slot="weapon2" style="display:none">
+                        <div class="equip-slot-label">🗡️ Off-Hand</div>
+                        <div class="equip-slot-item" id="slotWeapon2Item">Empty</div>
+                    </div>
+                    <div class="equip-slot" id="slotArmor" data-slot="armor">
+                        <div class="equip-slot-label">🛡️ Armor</div>
+                        <div class="equip-slot-item" id="slotArmorItem">Empty</div>
+                    </div>
+                    <div class="equip-slot" id="slotAccessory" data-slot="accessory">
+                        <div class="equip-slot-label">💍 Accessory</div>
+                        <div class="equip-slot-item" id="slotAccessoryItem">Empty</div>
+                    </div>
+                </div>
+                <div class="equip-bonuses" id="equipBonuses"></div>
+
+                <!-- Inventory -->
+                <div class="section-header">🎒 Inventory</div>
+                <div class="inventory-grid" id="inventoryGrid"></div>
+            </aside>
+
+            <!-- CENTER: Main Game Area -->
+            <main class="panel panel-center">
+                <!-- Tab Navigation moved to header -->
+
+                <!-- Zone Tab -->
+                <div class="tab-content active" id="tab-zone">
+                    <div class="zone-header" id="zoneHeader">
+                        <img id="zoneBackgroundImg" class="zone-bg-img" src="" alt="" style="display:none;">
+                        <span class="zone-emoji" id="zoneEmoji"></span>
+                        <div>
+                            <h2 id="zoneName"></h2>
+                            <p id="zoneDesc" class="zone-desc"></p>
+                            <p id="zoneLore" class="zone-lore"></p>
+                            <div class="zone-meta">
+                                <span class="danger-badge" id="zoneDanger"></span>
+                                <span id="zoneAgents" class="zone-agents"></span>
+                                <span id="zoneInfo"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="zone-actions">
+                        <button class="btn btn-action" onclick="doAction('rest')" style="max-width:220px">💤 Rest</button>
+                        <span class="rest-info">Heals 100% HP · 5 min cooldown</span>
+                    </div>
+
+                    <!-- Active Quest -->
+                    <div class="zone-section" id="activeQuestSection" style="display:none">
+                        <h3 class="zone-section-title">📜 Quest</h3>
+                        <div id="activeQuestContent"></div>
+                    </div>
+
+                    <!-- Party Section -->
+                    <div class="zone-section">
+                        <h3 class="zone-section-title">⚔️ Party</h3>
+                        <div id="partySection"></div>
+                    </div>
+
+                    <!-- Monsters Section -->
+                    <div class="zone-section">
+                        <h3 class="zone-section-title">👹 Monsters</h3>
+                        <div id="zoneMobs" class="zone-mobs"></div>
+                    </div>
+
+                    <!-- Resources Section -->
+                    <div class="zone-section">
+                        <h3 class="zone-section-title">🪓 Resources</h3>
+                        <div id="zoneResources" class="zone-resources"></div>
+                    </div>
+
+                    <!-- Crafting Section -->
+                    <div class="zone-section">
+                        <h3 class="zone-section-title">🔨 Crafting</h3>
+                        <div id="zoneCraftContent"></div>
+                    </div>
+
+                    <div class="zone-connections">
+                        <h3>Connected Zones</h3>
+                        <div id="connectedZones" class="connected-zones-grid"></div>
+                    </div>
+                </div>
+
+                <!-- Map Tab -->
+                <div class="tab-content" id="tab-map">
+                    <h2 class="section-title">🏔️ The Hollows - Dungeon Map</h2>
+                    <div class="dungeon-map" id="dungeonMap"></div>
+                </div>
+
+                <!-- Shop Tab -->
+                <div class="tab-content" id="tab-shop">
+                    <h2 class="section-title">🏪 The Gate Shop</h2>
+                    <p class="shop-note" id="shopNote">You must be at The Gate to buy/sell.</p>
+                    <div class="shop-grid" id="shopGrid"></div>
+                </div>
+
+                <!-- Guild Tab -->
+                <div class="tab-content" id="tab-guild">
+                    <h2 class="section-title">👥 Guild</h2>
+                    <div id="guildContent"></div>
+                </div>
+
+                <!-- Boss Tab -->
+                <div class="tab-content" id="tab-boss">
+                    <h2 class="section-title">🔥 The Ashborn</h2>
+                    <div id="bossContent"></div>
+                </div>
+
+                <!-- PvP Tab -->
+                <div class="tab-content" id="tab-pvp">
+                    <h2 class="section-title">⚔️ The Black Pit - PvP Arena</h2>
+                    <div id="pvpContent"></div>
+                </div>
+
+                <!-- Skills Tab -->
+                <div class="tab-content" id="tab-skills">
+                    <h2 class="section-title">🌟 Skill Trees</h2>
+                    <p style="color:#aaa;margin-bottom:16px">Earn skill points by leveling up. Unlock abilities for combat.</p>
+                    <div id="skillsContent"></div>
+                </div>
+
+                <!-- Quests Tab -->
+                <div class="tab-content" id="tab-quests">
+                    <h2 class="section-title">📜 Quests</h2>
+                    <div id="questsContent"></div>
+                </div>
+
+                <!-- Chain Tab -->
+                <div class="tab-content" id="tab-chain">
+                    <h2 class="section-title">⛓️ On-Chain Treasury</h2>
+                    <div id="chainContent"></div>
+                </div>
+
+                <!-- Craft Tab -->
+                <div class="tab-content" id="tab-craft">
+                    <h2 class="section-title">🔨 Crafting Table</h2>
+                    <p style="color:#aaa;margin-bottom:16px">Gather resources from zones, then craft powerful items.</p>
+                    <div id="craftContent"></div>
+                </div>
+
+                <!-- Market Tab -->
+                <div class="tab-content" id="tab-market">
+                    <h2 class="section-title">🏪 Marketplace</h2>
+                    <p style="color:#aaa;margin-bottom:16px">Buy and sell items. 5% tax on all sales.</p>
+                    <div id="marketContent"></div>
+                </div>
+
+                <!-- Leaderboard Tab -->
+                <div class="tab-content" id="tab-leaderboard">
+                    <h2 class="section-title">🏆 Leaderboard</h2>
+                    <div id="leaderboardContent" class="leaderboard-embed">
+                        <table class="lb-table">
+                            <thead><tr><th>#</th><th>Name</th><th>Lvl</th><th>XP</th><th>Kills</th><th>Gold</th></tr></thead>
+                            <tbody id="lbBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </main>
+
+            <!-- RIGHT: Others + Activity Feed -->
+            <div class="panel-right-wrap">
+                <button class="panel-toggle-btn" id="rightPanelToggle" onclick="toggleRightPanel()" title="Toggle panel">▶</button>
+                <aside class="panel panel-right" id="rightPanel">
+                <div class="collapsible-section">
+                    <div class="section-header collapsible-header" onclick="toggleSection('othersSection', this)">👤 Others Here <span class="collapse-icon">▾</span></div>
+                    <div class="collapsible-body" id="othersSection">
+                        <div id="zoneAgentsList" class="zone-agents-list"></div>
+                    </div>
+                </div>
+                <div class="collapsible-section">
+                    <div class="section-header collapsible-header" onclick="toggleSection('activitySection', this)">📜 Activity Feed <span class="collapse-icon">▾</span></div>
+                    <div class="collapsible-body" id="activitySection">
+                        <div class="activity-feed" id="activityFeed"></div>
+                    </div>
+                </div>
+                <div class="collapsible-section chat-section">
+                    <div class="section-header collapsible-header" onclick="toggleSection('chatSection', this)">💬 Chat <span class="collapse-icon">▾</span></div>
+                    <div class="collapsible-body" id="chatSection">
+                        <div class="chat-panel">
+                            <div class="chat-messages" id="chatMessages"></div>
+                            <div class="chat-input-row">
+                                <input type="text" class="chat-input" id="chatInput" placeholder="Say something..." maxlength="200" onkeydown="if(event.key==='Enter')sendChat()">
+                                <button class="chat-send-btn" onclick="sendChat()">➤</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+            </div>
+        </div>
+    </div>
+
+    <script src="/play/play.js"></script>
+</body>
+</html>

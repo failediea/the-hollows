@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  hollows:
+    build: .
+    container_name: the-hollows
+    restart: unless-stopped
+    ports:
+      - "${PORT:-3000}:3000"
+    environment:
+      - PORT=${PORT:-3000}
+      - NODE_ENV=${NODE_ENV:-production}
+      - DATABASE_PATH=/app/data/hollows.db
+      - MONAD_RPC_URL=${MONAD_RPC_URL:-https://monad-testnet.drpc.org}
+      - PRIVATE_KEY=${PRIVATE_KEY}
+      - TREASURY_CONTRACT_ADDRESS=${TREASURY_CONTRACT_ADDRESS}
+      - CORRUPTION_TICK_INTERVAL_MS=${CORRUPTION_TICK_INTERVAL_MS:-600000}
+      - MOB_RESPAWN_INTERVAL_MS=${MOB_RESPAWN_INTERVAL_MS:-300000}
+    volumes:
+      # Persist SQLite database
+      - ./data:/app/data
+    networks:
+      - hollows-network
+
+networks:
+  hollows-network:
+    driver: bridge

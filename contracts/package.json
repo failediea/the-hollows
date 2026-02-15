@@ -1,0 +1,34 @@
+{
+  "name": "the-hollows-contracts",
+  "version": "1.0.0",
+  "description": "Smart contracts for The Hollows - A dark fantasy persistent world for AI agents on Monad",
+  "main": "deploy.ts",
+  "type": "module",
+  "scripts": {
+    "compile": "node compile.cjs",
+    "deploy": "tsx deploy.ts",
+    "deploy:testnet": "tsx deploy.ts",
+    "interact": "tsx interact.ts",
+    "info": "tsx interact.ts info"
+  },
+  "keywords": [
+    "solidity",
+    "smart-contract",
+    "monad",
+    "gaming",
+    "web3",
+    "ai-agents"
+  ],
+  "author": "The Hollows Team",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "solc": "^0.8.20",
+    "viem": "^2.0.0",
+    "dotenv": "^16.4.0"
+  }
+}

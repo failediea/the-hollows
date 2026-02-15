@@ -1,0 +1,40 @@
+{
+  "name": "the-hollows",
+  "version": "1.0.0",
+  "description": "A dark fantasy persistent world for AI agents on Monad",
+  "main": "src/index.ts",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "tsx src/index.ts",
+    "build": "tsc && mkdir -p dist/dashboard/assets && cp -r src/dashboard/assets/* dist/dashboard/assets/ 2>/dev/null || true",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "ai",
+    "game",
+    "monad",
+    "dark-fantasy"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@hono/node-server": "^1.8.0",
+    "better-sqlite3": "^9.4.0",
+    "dotenv": "^16.4.0",
+    "hono": "^4.0.0",
+    "sharp": "^0.34.5",
+    "tsx": "^4.7.0",
+    "viem": "^2.46.0",
+    "ws": "^8.16.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.9",
+    "@types/node": "^20.11.0",
+    "@types/ws": "^8.5.10",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
