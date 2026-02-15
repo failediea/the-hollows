@@ -686,7 +686,6 @@ function updateZoneView() {
     const zone = state.world.zones?.find(z => z.id === a.zone);
     if (!zone) return;
 
-    document.getElementById('zoneEmoji').textContent = '';
     document.getElementById('zoneName').textContent = zone.emoji + ' ' + zone.name;
 
     // Zone background image
@@ -740,6 +739,12 @@ function renderZoneDetails() {
             });
         }
         loreEl.textContent = lore;
+    }
+
+    const loreBlock = document.getElementById('zoneLoreBlock');
+    if (loreBlock) {
+        const loreText = document.getElementById('zoneLore');
+        loreBlock.style.display = (loreText && loreText.textContent) ? 'block' : 'none';
     }
 
     // Zone info badges
@@ -1214,6 +1219,7 @@ function switchTab(tab) {
     if (tab === 'skills') renderSkillsTab();
     if (tab === 'quests') renderQuestsTab();
     if (tab === 'leaderboard') renderLeaderboard();
+    if (tab === 'party') renderPartySection();
 }
 
 async function renderLeaderboard() {

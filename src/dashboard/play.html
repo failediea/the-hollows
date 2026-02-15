@@ -94,6 +94,7 @@
             <div class="top-center">
                 <div class="tab-nav" id="headerTabNav">
                     <button class="tab-btn active" data-tab="zone" onclick="switchTab('zone')">🗺️ Zone</button>
+                    <button class="tab-btn" data-tab="party" onclick="switchTab('party')">⚔️ Party</button>
                     <button class="tab-btn" data-tab="map" onclick="switchTab('map')">🏔️ Map</button>
                     <button class="tab-btn" data-tab="shop" onclick="switchTab('shop')">🏪 Shop</button>
                     <button class="tab-btn" data-tab="guild" onclick="switchTab('guild')">👥 Guild</button>
@@ -201,19 +202,21 @@
 
                 <!-- Zone Tab -->
                 <div class="tab-content active" id="tab-zone">
-                    <div class="zone-header" id="zoneHeader">
-                        <img id="zoneBackgroundImg" class="zone-bg-img" src="" alt="" style="display:none;">
-                        <span class="zone-emoji" id="zoneEmoji"></span>
-                        <div>
-                            <h2 id="zoneName"></h2>
-                            <p id="zoneDesc" class="zone-desc"></p>
-                            <p id="zoneLore" class="zone-lore"></p>
+                    <div class="zone-hero" id="zoneHeader">
+                        <img id="zoneBackgroundImg" class="zone-hero-img" src="" alt="" style="display:none;">
+                        <div class="zone-hero-overlay"></div>
+                        <div class="zone-hero-content">
+                            <h2 id="zoneName" class="zone-hero-title"></h2>
+                            <p id="zoneDesc" class="zone-hero-desc"></p>
                             <div class="zone-meta">
                                 <span class="danger-badge" id="zoneDanger"></span>
                                 <span id="zoneAgents" class="zone-agents"></span>
                                 <span id="zoneInfo"></span>
                             </div>
                         </div>
+                    </div>
+                    <div class="zone-lore-block" id="zoneLoreBlock">
+                        <p id="zoneLore" class="zone-lore-text"></p>
                     </div>
                     <div class="zone-actions">
                         <button class="btn btn-action" onclick="doAction('rest')" style="max-width:220px">💤 Rest</button>
@@ -224,12 +227,6 @@
                     <div class="zone-section" id="activeQuestSection" style="display:none">
                         <h3 class="zone-section-title">📜 Quest</h3>
                         <div id="activeQuestContent"></div>
-                    </div>
-
-                    <!-- Party Section -->
-                    <div class="zone-section">
-                        <h3 class="zone-section-title">⚔️ Party</h3>
-                        <div id="partySection"></div>
                     </div>
 
                     <!-- Monsters Section -->
@@ -329,6 +326,12 @@
                             <tbody id="lbBody"></tbody>
                         </table>
                     </div>
+                </div>
+
+                <!-- Party Tab -->
+                <div class="tab-content" id="tab-party">
+                    <h2 class="section-title">⚔️ Party</h2>
+                    <div id="partySection"></div>
                 </div>
             </main>
 
