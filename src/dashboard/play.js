@@ -759,7 +759,7 @@ function renderZoneDetails() {
         } else {
             mobsEl.innerHTML = zd.mobs.map(m => {
                 const emoji = MOB_EMOJI[m.name] || '👹';
-                const mobArtMap = {'Sewer Rat':'/assets/sewer-rat.png','Giant Rat':'/assets/giant-rat.png','Cave Bat':'/assets/cave-bat.png','Plague Rat':'/assets/blighted-rat.png','Corrupted Hound':'/assets/corrupted-hound.png','Rabid Ghoul':'/assets/rabid-ghoul.png','Wandering Ghost':'/assets/wraith.png','Tomb Shade':'/assets/tomb-shade.png','Gremlin Miner':'/assets/gremlin-miner.png','Skeleton Warrior':'/assets/skeleton-warrior.png','Cave Troll':'/assets/cave-troll.png','Giant Spider':'/assets/giant-spider.png','Broodmother':'/assets/broodmother.png','Brute Smith':'/assets/brute-smith.png','Ember Colossus':'/assets/ember-colossus.png','Death Knight':'/assets/death-knight.png','The Ashborn':'/assets/the-ashborn.png','Skeletal Dragon':'/assets/skeletal-dragon.png'};
+                const mobArtMap = {'Sewer Rat':'/assets/combat/sewer-rat.png','Giant Rat':'/assets/combat/giant-rat.png','Cave Bat':'/assets/combat/cave-bat.png','Plague Rat':'/assets/combat/plague-rat.png','Corrupted Hound':'/assets/combat/corrupted-hound.png','Rabid Ghoul':'/assets/combat/rabid-ghoul.png','Wandering Ghost':'/assets/combat/wandering-ghost.png','Tomb Shade':'/assets/combat/tomb-shade.png','Gremlin Miner':'/assets/gremlin-miner.png','Skeleton Warrior':'/assets/skeleton-warrior.png','Cave Troll':'/assets/cave-troll.png','Giant Spider':'/assets/giant-spider.png','Broodmother':'/assets/broodmother.png','Brute Smith':'/assets/brute-smith.png','Ember Colossus':'/assets/ember-colossus.png','Death Knight':'/assets/death-knight.png','The Ashborn':'/assets/the-ashborn.png','Skeletal Dragon':'/assets/skeletal-dragon.png'};
                 const elem = m.element ? `<span class="mob-element">${ELEMENT_EMOJI[m.element] || ''} ${m.element}</span>` : '';
                 const drops = m.drop_table?.map(d => `${ITEM_EMOJI[d.item] || '📦'} ${Math.round(d.chance*100)}%`).join('  ') || 'None';
                 
@@ -791,10 +791,15 @@ function renderZoneDetails() {
                 return `<div class="mob-card-compact ${threatClass}" id="mob-${m.id}">
                     <div class="mob-portrait-wrap">${portrait}</div>
                     <div class="mob-info-compact">
-                        <div class="mob-name-row"><span class="mob-name">${m.name}</span>${elem}</div>
-                        <div class="mob-stat-row"><span>❤️ ${m.hp}</span> <span>⚔️ ${m.atk}</span> <span>🛡️ ${m.def}</span></div>
-                        <div class="mob-reward-row"><span>⭐ <span class="reward-label">XP</span> ${m.xp_reward}</span> <span>💰 <span class="reward-label">${m.gold_reward}g</span></span> ${drops}</div>
-                        <div class="mob-threat-row"><span class="threat-badge ${threatClass}">${threatLevel}</span> <span class="win-chance">~${winChance}% win</span></div>
+                        <div class="mob-info-left">
+                            <div class="mob-name-row"><span class="mob-name">${m.name}</span>${elem}</div>
+                            <div class="mob-stat-row"><span>❤️ ${m.hp}</span> <span>⚔️ ${m.atk}</span> <span>🛡️ ${m.def}</span></div>
+                            <div class="mob-reward-row"><span>⭐ <span class="reward-label">XP</span> ${m.xp_reward}</span> <span>💰 <span class="reward-label">${m.gold_reward}g</span></span> ${drops}</div>
+                            <div class="mob-threat-row"><span class="threat-badge ${threatClass}">${threatLevel}</span> <span class="win-chance">~${winChance}% win</span></div>
+                        </div>
+                        <div class="mob-info-right">
+                            <p class="mob-lore">${m.description || ''}</p>
+                        </div>
                     </div>
                     <div class="mob-btn-row">
                         <button class="btn btn-attack-compact" onclick="attackMob('${m.id}', '${m.name}', ${m.hp})">⚔️ Attack</button>

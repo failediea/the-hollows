@@ -1007,7 +1007,7 @@ body {
 .mob-portrait {
     width: 100%;
     height: 100%;
-    object-fit: contain;
+    object-fit: cover;
     transition: transform 0.4s, filter 0.4s;
 }
 .mob-card-compact:hover .mob-portrait {
@@ -1028,6 +1028,24 @@ body {
 .mob-info-compact {
     padding: 10px 12px;
     width: 100%;
+    display: flex;
+    gap: 12px;
+}
+.mob-info-left {
+    flex: 1;
+    text-align: left;
+}
+.mob-info-right {
+    flex: 1;
+    text-align: left;
+}
+.mob-lore {
+    font-size: 11px;
+    color: var(--starsilver-silver);
+    font-style: italic;
+    opacity: 0.8;
+    line-height: 1.4;
+    margin: 0;
 }
 .mob-info-compact .mob-stat-row,
 .mob-info-compact .mob-reward-row { font-size: 11px; color: var(--starsilver-silver); }
@@ -1047,7 +1065,7 @@ body {
 .mob-hp-bar { height: 100%; background: linear-gradient(90deg, #dc2626, #ef4444); border-radius: 3px; transition: width 0.3s; }
 .mob-hp-text { position: absolute; top: 0; left: 4px; font-size: 9px; line-height: 10px; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.8); }
 
-.mob-stat-row, .mob-reward-row { display: flex; gap: 8px; font-size: 11px; color: var(--starsilver-silver); justify-content: center; flex-wrap: wrap; }
+.mob-stat-row, .mob-reward-row { display: flex; gap: 8px; font-size: 11px; color: var(--starsilver-silver); flex-wrap: wrap; }
 
 .mob-col-right { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; min-width: 70px; }
 
