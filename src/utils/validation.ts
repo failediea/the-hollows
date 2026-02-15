@@ -186,8 +186,8 @@ export function checkMaxEntriesPerWallet(
   seasonId: number
 ): { allowed: boolean; error?: string } {
   const count = db.prepare(
-    'SELECT COUNT(*) as count FROM agents WHERE wallet_address = ? AND season_id = ?'
-  ).get(walletAddress, seasonId) as { count: number };
+    'SELECT COUNT(*) as count FROM agents WHERE LOWER(wallet_address) = ? AND season_id = ?'
+  ).get(walletAddress.toLowerCase(), seasonId) as { count: number };
 
   if (count.count >= MAX_ENTRIES_PER_WALLET) {
     return { 

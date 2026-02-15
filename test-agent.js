@@ -87,6 +87,9 @@ async function getZoneMobs(zone) {
 
 // ============ REGISTRATION ============
 
+// NOTE: This test bot uses /enter-wallet which requires a valid wallet signature
+// and on-chain payment. It will only work in dev/test environments where payment
+// verification is mocked or the wallet has already paid the entry fee.
 async function register() {
   const adjectives = ['Shadow', 'Iron', 'Bone', 'Dark', 'Grim', 'Storm', 'Blood', 'Ash', 'Flame', 'Void'];
   const nouns = ['Walker', 'Blade', 'Fang', 'Wraith', 'Seeker', 'Hunter', 'Reaver', 'Warden', 'Claw', 'Bane'];
@@ -96,7 +99,7 @@ async function register() {
   const wallet = '0x' + Array.from({ length: 40 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
 
   console.log(`📝 Registering as ${name} (wallet: ${wallet.slice(0, 10)}...)`);
-  const res = await api('POST', '/enter', { name, walletAddress: wallet });
+  const res = await api('POST', '/enter-wallet', { name, walletAddress: wallet, signature: '0x' + 'ab'.repeat(65) });
 
   if (!res.success && !res.agent) {
     console.error('❌ Registration failed:', res.error || res.message);

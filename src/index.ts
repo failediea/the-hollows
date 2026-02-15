@@ -361,17 +361,22 @@ app.post('/enter-wallet', async (c) => {
       return c.json({ error: 'Agent name already taken' }, 409);
     }
 
+    // Get or create season
+    const season = db.prepare('SELECT * FROM seasons WHERE is_active = 1 ORDER BY id DESC LIMIT 1').get() as any;
+    if (!season) {
+      return c.json({ error: 'No active season' }, 500);
+    }
+
+    // Check max entries per wallet for this season
+    const { checkMaxEntriesPerWallet } = await import('./utils/validation.js');
+    const maxCheck = checkMaxEntriesPerWallet(db, walletAddress, season.id);
+    if (!maxCheck.allowed) return c.json({ error: maxCheck.error }, 429);
+
     // Verify on-chain payment
     const { verifyEntryPayment } = await import('./utils/validation.js');
     const paymentCheck = await verifyEntryPayment(walletAddress, db);
     if (!paymentCheck.paid) {
       return c.json({ error: paymentCheck.error }, 402);
-    }
-
-    // Get or create season
-    const season = db.prepare('SELECT * FROM seasons WHERE is_active = 1 ORDER BY id DESC LIMIT 1').get() as any;
-    if (!season) {
-      return c.json({ error: 'No active season' }, 500);
     }
 
     // Create new agent (wrapped in transaction to prevent race conditions)

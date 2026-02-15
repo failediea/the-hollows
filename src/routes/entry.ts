@@ -1,109 +1,16 @@
 import { Hono } from 'hono';
 import Database from 'better-sqlite3';
-import { createAgent } from '../engine/agent.js';
-import { getCurrentSeason } from '../engine/seasons.js';
 import { handleAction } from '../engine/actions.js';
 import { Agent } from '../db/schema.js';
 import { getGuildInfo } from '../engine/guild.js';
 import {
-  validateName,
-  validateWalletAddress,
   validateAction,
-  sanitizeString,
   checkRateLimit,
   getApiKeyFromRequest
 } from '../utils/validation.js';
 
 export function createEntryRoutes(db: Database.Database) {
   const app = new Hono();
-
-  // Register new agent
-  app.post('/enter', async (c) => {
-    try {
-      const body = await c.req.json();
-      let { name, walletAddress } = body;
-
-      if (!name || !walletAddress) {
-        return c.json({ error: 'Missing required fields: name, walletAddress' }, 400);
-      }
-
-      // Sanitize inputs
-      name = sanitizeString(name);
-      walletAddress = sanitizeString(walletAddress);
-
-      // Validate name
-      const nameValidation = validateName(name);
-      if (!nameValidation.valid) {
-        return c.json({ error: nameValidation.error }, 400);
-      }
-
-      // Validate wallet address
-      const walletValidation = validateWalletAddress(walletAddress);
-      if (!walletValidation.valid) {
-        return c.json({ error: walletValidation.error }, 400);
-      }
-
-      // Check if agent name already exists
-      const existing = db.prepare('SELECT id FROM agents WHERE name = ?').get(name);
-      if (existing) {
-        return c.json({ error: 'Agent name already taken' }, 409);
-      }
-
-      // Get current season
-      const season = getCurrentSeason(db);
-      if (!season) {
-        return c.json({ error: 'No active season' }, 500);
-      }
-
-      // Verify on-chain payment (each registration requires a new 10 MON payment)
-      const { verifyEntryPayment } = await import('../utils/validation.js');
-      const paymentCheck = await verifyEntryPayment(walletAddress, db);
-      if (!paymentCheck.paid) {
-        return c.json({ error: paymentCheck.error }, 402);
-      }
-
-      // Create agent (wrapped in transaction to prevent race conditions)
-      const createInTransaction = db.transaction(() => {
-        // Re-check name not taken inside transaction
-        const taken = db.prepare('SELECT id FROM agents WHERE name = ?').get(name);
-        if (taken) throw new Error('Agent name already taken');
-        return createAgent(db, name, walletAddress, season.id);
-      });
-
-      try {
-        const agent = createInTransaction();
-        return c.json({
-          success: true,
-          message: 'Welcome to The Hollows',
-          agent: {
-            id: agent.id,
-            name: agent.name,
-            apiKey: agent.api_key,
-            zone: agent.zone_id,
-            stats: {
-              hp: agent.hp,
-              maxHp: agent.max_hp,
-              atk: agent.atk,
-              def: agent.def,
-              spd: agent.spd,
-              luck: agent.luck,
-              level: agent.level,
-              xp: agent.xp
-            },
-            gold: agent.gold,
-            corruption: agent.corruption,
-            isDead: agent.is_dead,
-            seasonId: agent.season_id
-          }
-        });
-      } catch (e: any) {
-        return c.json({ error: e.message || 'Registration failed' }, 409);
-      }
-    } catch (error) {
-      console.error('Error in /enter:', error);
-      return c.json({ error: 'Failed to create agent. Please try again.' }, 500);
-    }
-  });
 
   // Submit action
   app.post('/action', async (c) => {

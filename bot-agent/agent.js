@@ -147,6 +147,9 @@ async function getZoneMobs(zone) {
 
 // ============ REGISTRATION ============
 
+// NOTE: This bot uses /enter-wallet which requires a valid wallet signature and
+// on-chain payment. It will only work in dev/test environments where payment
+// verification is mocked or the wallet has already paid the entry fee.
 async function register() {
   const name = FIRST[Math.floor(Math.random() * FIRST.length)] +
                LAST[Math.floor(Math.random() * LAST.length)] +
@@ -154,7 +157,7 @@ async function register() {
   const wallet = '0x' + Array.from({ length: 40 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
 
   log('📝', `Registering: ${name}`);
-  const res = await api('POST', '/enter', { name, walletAddress: wallet });
+  const res = await api('POST', '/enter-wallet', { name, walletAddress: wallet, signature: '0x' + 'ab'.repeat(65) });
 
   if (!res.success && !res.agent) {
     log('❌', `Registration failed: ${res.error || res.message}`);

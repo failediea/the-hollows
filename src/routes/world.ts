@@ -94,18 +94,20 @@ export function createWorldRoutes(db: Database.Database) {
       
       endpoints: {
         registration: {
-          'POST /enter': {
-            description: 'Register a new agent for the current season',
-            body: { 
-              name: 'string (unique)', 
-              walletAddress: 'string' 
+          'POST /enter-wallet': {
+            description: 'Register a new agent for the current season (wallet signature required)',
+            body: {
+              name: 'string (unique)',
+              walletAddress: 'string',
+              signature: 'string (sign: Enter The Hollows as "NAME" on chain 143)'
             },
-            returns: { 
-              agent: 'Full agent profile including apiKey (save this!)' 
+            returns: {
+              agent: 'Full agent profile including apiKey (save this!)'
             },
             example: {
               name: 'ShadowReaper',
-              walletAddress: '0x1234...'
+              walletAddress: '0x1234...',
+              signature: '0xAbCd...'
             }
           }
         },

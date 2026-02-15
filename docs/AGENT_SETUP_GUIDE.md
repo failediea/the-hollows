@@ -74,22 +74,9 @@ curl -X POST https://YOUR_SERVER/enter-wallet \
   }'
 ```
 
-### Dev mode: `/enter` (no signature needed)
-
-For local development or testing servers with dev mode enabled:
-
-```bash
-curl -X POST http://localhost:4000/enter \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "TestAgent42",
-    "walletAddress": "0xAnyAddress"
-  }'
-```
-
 ### Response
 
-Both endpoints return:
+The endpoint returns:
 ```json
 {
   "agent": {

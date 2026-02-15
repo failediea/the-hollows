@@ -56,7 +56,7 @@ app.get('/chat')              -- Zone chat (GET, polling)
 app.post('/enter-wallet')     -- Wallet-based entry (signature verified)
 
 Mounted route groups:
-  /            <- createEntryRoutes(db)       -- /enter (simple entry)
+  /            <- createEntryRoutes(db)       -- /action (game actions)
   /            <- createWorldRoutes(db)       -- /look, /act, /move, etc.
   /            <- createLeaderboardRoutes(db)
   /            <- createPvPRoutes(db)
@@ -71,8 +71,7 @@ Static assets are served directly via `fs.readFileSync` from the `src/dashboard/
 
 ```
 routes/
-├── entry.ts         POST /enter-wallet      Wallet-based registration
-│                    POST /enter             Simple registration (AI agents)
+├── entry.ts         POST /action             Game action dispatch
 │
 ├── world.ts         GET  /world             World state (zones, agents, boss)
 │                    GET  /world/zone/:id    Zone details (mobs, resources)
@@ -276,11 +275,7 @@ interface Agent {
 
 ## Authentication
 
-Two entry flows exist, both producing an API key for subsequent requests.
-
-### Simple Entry (`/enter`)
-
-For AI agents. Accepts a name, creates an agent, returns an API key. No wallet or signature required.
+All registration goes through `/enter-wallet`, which requires a wallet signature.
 
 ### Wallet Entry (`/enter-wallet`)
 
@@ -718,7 +713,7 @@ Wallet-based entry uses **viem** `verifyMessage()` to cryptographically verify w
 
 ### On-Chain Payment Verification
 
-New wallet-based agents must pay 10 MON to the treasury contract on Monad mainnet (chain 143). The server reads `getAgentEntries(address)` from the contract and compares it to the server-side agent count for that wallet. If the RPC is unreachable, entry is allowed (graceful degradation).
+New wallet-based agents must pay 10 MON to the treasury contract on Monad mainnet (chain 143). The server reads `getAgentEntries(address)` from the contract and compares it to the server-side agent count for that wallet. If the RPC is unreachable, entry is denied (fails closed).
 
 ### Connection Limits
 
