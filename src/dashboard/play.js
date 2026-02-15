@@ -5,7 +5,7 @@
 const API = window.location.origin;
 const MONAD_RPC = 'https://rpc.monad.xyz';
 const MONAD_CHAIN_ID = 143;
-const TREASURY_ADDRESS = '0x23d916bd5c4c5a88e2ee1ee124ca320902f79820'; // TODO: Update after mainnet deployment
+const TREASURY_ADDRESS = '0x23d916bd5c4c5a88e2ee1ee124ca320902f79820';
 const TREASURY_ABI = [
     'function enter() external payable',
     'function entryFee() external view returns (uint256)',

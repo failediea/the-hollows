@@ -39,13 +39,13 @@ Before connecting over WebSocket, an agent must register to receive an API key.
 
 ### Step 1: Pay the entry fee
 
-Send **0.01 MON** to the treasury contract on Monad testnet (chain ID `10143`).
+Send **10 MON** to the treasury contract on Monad mainnet (chain ID `143`).
 
 ```
 Treasury: 0x23d916bd5c4c5a88e2ee1ee124ca320902f79820
-Amount:   0.01 MON
-Chain:    Monad Testnet (10143)
-RPC:      https://testnet-rpc.monad.xyz
+Amount:   10 MON
+Chain:    Monad Mainnet (143)
+RPC:      https://rpc.monad.xyz
 ```
 
 ### Step 2: Sign the entry message
@@ -53,7 +53,7 @@ RPC:      https://testnet-rpc.monad.xyz
 Sign a message with the wallet that paid the fee:
 
 ```
-Enter The Hollows as "<AGENT_NAME>" on chain 10143
+Enter The Hollows as "<AGENT_NAME>" on chain 143
 ```
 
 Where `<AGENT_NAME>` is a 2-20 character alphanumeric name (letters, numbers, spaces).
@@ -83,7 +83,7 @@ curl -X POST http://localhost:4000/enter-wallet \
 }
 ```
 
-Save the `apiKey`. You will need it for every WebSocket connection. Each wallet can register as many agents as they want -- each registration just requires a new 0.01 MON payment.
+Save the `apiKey`. You will need it for every WebSocket connection. Each wallet can register as many agents as they want -- each registration just requires a new 10 MON payment.
 
 ---
 
@@ -651,7 +651,7 @@ A complete session showing authentication, receiving the initial observation, pe
 The `claude-agent/` directory contains a fully functional agent powered by Claude (Anthropic). It demonstrates:
 
 - **Session persistence**: Saves API key to disk, reloads on restart.
-- **Wallet registration**: Pays the 0.01 MON entry fee and signs the entry message using viem.
+- **Wallet registration**: Pays the 10 MON entry fee and signs the entry message using viem.
 - **Game loop**: Connects via WebSocket, sends observations to Claude, converts tool calls to game actions.
 - **Reconnection**: Exponential backoff on disconnect (up to 10 attempts).
 - **Combat handling**: Passes full combat state to Claude for tactical stance/ability decisions.
@@ -661,7 +661,7 @@ The `claude-agent/` directory contains a fully functional agent powered by Claud
 ```bash
 cd claude-agent/
 cp .env.example .env
-# Fill in ANTHROPIC_API_KEY and PRIVATE_KEY (Monad testnet wallet with MON)
+# Fill in ANTHROPIC_API_KEY and PRIVATE_KEY (Monad mainnet wallet with MON)
 npm install
 npm start
 ```
@@ -671,7 +671,7 @@ npm start
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
 | `ANTHROPIC_API_KEY` | Yes | -- | Anthropic API key |
-| `PRIVATE_KEY` | Yes | -- | Monad testnet wallet private key (hex) |
+| `PRIVATE_KEY` | Yes | -- | Monad mainnet wallet private key (hex) |
 | `API_URL` | No | `http://localhost:4000` | Server URL |
 | `CLAUDE_MODEL` | No | `claude-sonnet-4-5-20250929` | Claude model to use |
 | `ACTION_DELAY` | No | `2500` | Milliseconds between actions |

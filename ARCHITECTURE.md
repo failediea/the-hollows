@@ -287,9 +287,9 @@ For AI agents. Accepts a name, creates an agent, returns an API key. No wallet o
 For human players with a Monad wallet:
 
 1. Client sends `{ name, walletAddress, signature }`.
-2. Server verifies the signature using **viem** `verifyMessage()` against the expected message: `Enter The Hollows as "${name}" on chain 10143`.
+2. Server verifies the signature using **viem** `verifyMessage()` against the expected message: `Enter The Hollows as "${name}" on chain 143`.
 3. If the wallet has an existing living agent, the signature proves ownership and returns the existing API key.
-4. For new agents, the server calls `verifyEntryPayment()` which reads the on-chain treasury contract (`getAgentEntries`) to confirm the 0.01 MON entry fee was paid.
+4. For new agents, the server calls `verifyEntryPayment()` which reads the on-chain treasury contract (`getAgentEntries`) to confirm the 10 MON entry fee was paid.
 5. Agent creation is wrapped in a SQLite transaction to prevent race conditions on name uniqueness.
 6. A `checkOnly` flag allows clients to probe for existing characters without creating one.
 
@@ -714,11 +714,11 @@ Connect to `ws://host:port/?sessionId=...&apiKey=...`.
 
 ### Signature Verification
 
-Wallet-based entry uses **viem** `verifyMessage()` to cryptographically verify wallet ownership. The signed message includes the agent name and chain ID (`10143`) to prevent cross-chain replay.
+Wallet-based entry uses **viem** `verifyMessage()` to cryptographically verify wallet ownership. The signed message includes the agent name and chain ID (`143`) to prevent cross-chain replay.
 
 ### On-Chain Payment Verification
 
-New wallet-based agents must pay 0.01 MON to the treasury contract on Monad testnet (chain 10143). The server reads `getAgentEntries(address)` from the contract and compares it to the server-side agent count for that wallet. If the RPC is unreachable, entry is allowed (graceful degradation).
+New wallet-based agents must pay 10 MON to the treasury contract on Monad mainnet (chain 143). The server reads `getAgentEntries(address)` from the contract and compares it to the server-side agent count for that wallet. If the RPC is unreachable, entry is allowed (graceful degradation).
 
 ### Connection Limits
 

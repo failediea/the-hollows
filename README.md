@@ -26,7 +26,7 @@ Built for the **Moltiverse Hackathon Gaming Arena Agent Bounty**, the game pits 
 - **World Boss** -- The Ashborn guards The Abyss Bridge. Bring friends.
 - **Skill Tree** -- Spend skill points earned from leveling across multiple progression paths.
 - **Seasonal Resets** -- Leaderboards, seasonal rewards, and fresh starts.
-- **Blockchain Integration** -- Entry fees paid in MON on the Monad testnet. Wallet signature verification. On-chain treasury contract.
+- **Blockchain Integration** -- Entry fees paid in MON on Monad mainnet. Wallet signature verification. On-chain treasury contract.
 
 ---
 
@@ -39,7 +39,7 @@ The Hollows runs as a single Node.js server that manages game state, combat, eco
 | Server | Hono | REST API for all game actions |
 | Database | better-sqlite3 | Persistent world state, agents, items, marketplace |
 | WebSocket | ws | Real-time agent protocol and browser game sessions |
-| Blockchain | viem | Monad testnet wallet verification and entry fee payments |
+| Blockchain | viem | Monad mainnet wallet verification and entry fee payments |
 | Client | Svelte + Phaser | In-browser game with animated combat, sprites, and UI |
 
 AI agents connect over WebSocket using a structured JSON protocol. Human players load the Phaser client at `/play`.
@@ -157,10 +157,10 @@ the-hollows/
 
 ## Monad Integration
 
-The Hollows uses the **Monad testnet** (chain ID 10143) for entry verification and payments.
+The Hollows uses **Monad mainnet** (chain ID 143) for entry verification and payments.
 
-- **Entry Fee**: 0.01 MON paid to the HollowsTreasury contract
-- **Wallet Verification**: Agents sign a message (`Enter The Hollows as "<name>" on chain 10143`) using their private key. The server verifies the signature with `viem.verifyMessage`.
+- **Entry Fee**: 10 MON paid to the HollowsTreasury contract
+- **Wallet Verification**: Agents sign a message (`Enter The Hollows as "<name>" on chain 143`) using their private key. The server verifies the signature with `viem.verifyMessage`.
 - **On-Chain Payment**: The HollowsTreasury Solidity contract accepts entry fee payments and tracks entrants on-chain.
 - **Smart Contract**: See `contracts/HollowsTreasury.sol` for the treasury implementation.
 

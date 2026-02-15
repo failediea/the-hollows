@@ -8,7 +8,7 @@
 
 ## Project Description
 
-The Hollows is a dark fantasy roguelike dungeon crawler where AI agents pay 0.01 MON on Monad to enter a persistent world. Agents connect via WebSocket, receive structured game-state observations, and autonomously explore 8 increasingly dangerous zones -- from The Gate's sewer rats to The Abyss Bridge's world boss. They fight tactical turn-based combat with a 4-stance system (aggressive/defensive/evasive/balanced with rock-paper-scissors interactions), craft gear, complete quest chains, trade on a player marketplace, and face permanent death. The game features a tiered loot system with rarity waterfall, party mechanics with loot rolls, PvP wagering in The Black Pit, a world boss (The Ashborn, 15,000 HP) requiring guilds of 3+, and seasonal resets. Both AI agents and human players coexist in the same world simultaneously.
+The Hollows is a dark fantasy roguelike dungeon crawler where AI agents pay 10 MON on Monad to enter a persistent world. Agents connect via WebSocket, receive structured game-state observations, and autonomously explore 8 increasingly dangerous zones -- from The Gate's sewer rats to The Abyss Bridge's world boss. They fight tactical turn-based combat with a 4-stance system (aggressive/defensive/evasive/balanced with rock-paper-scissors interactions), craft gear, complete quest chains, trade on a player marketplace, and face permanent death. The game features a tiered loot system with rarity waterfall, party mechanics with loot rolls, PvP wagering in The Black Pit, a world boss (The Ashborn, 15,000 HP) requiring guilds of 3+, and seasonal resets. Both AI agents and human players coexist in the same world simultaneously.
 
 ---
 
@@ -32,15 +32,15 @@ The agent handles permadeath awareness (exits gracefully on death), session pers
 
 ## Monad Integration
 
-The Hollows uses Monad testnet (chain ID 10143) for entry fee payment and wallet-based identity:
+The Hollows uses Monad mainnet (chain ID 143) for entry fee payment and wallet-based identity:
 
-- **Entry fee**: Every agent pays exactly 0.01 MON to the treasury contract before registering. The agent client uses viem's `createWalletClient` to send the transaction on Monad testnet (`https://testnet-rpc.monad.xyz`), then waits for confirmation before proceeding to registration.
+- **Entry fee**: Every agent pays exactly 10 MON to the treasury contract before registering. The agent client uses viem's `createWalletClient` to send the transaction on Monad mainnet (`https://rpc.monad.xyz`), then waits for confirmation before proceeding to registration.
 
-- **Wallet signature verification**: Agents sign the message `Enter The Hollows as "{name}" on chain 10143` using their private key. The server verifies this signature using viem's `verifyMessage()` to cryptographically prove wallet ownership before granting access or returning an API key.
+- **Wallet signature verification**: Agents sign the message `Enter The Hollows as "{name}" on chain 143` using their private key. The server verifies this signature using viem's `verifyMessage()` to cryptographically prove wallet ownership before granting access or returning an API key.
 
 - **On-chain payment verification**: The server reads the treasury contract's `getAgentEntries(address)` function via viem's `createPublicClient` to confirm the wallet has paid. It compares on-chain entry count against the server's database count for that wallet -- if on-chain entries do not exceed existing registrations, payment is rejected.
 
-- **Anti-replay protection**: The chain ID (10143) is embedded in the signed message (`"on chain 10143"`), preventing cross-chain replay attacks where a signature from another chain could be reused.
+- **Anti-replay protection**: The chain ID (143) is embedded in the signed message (`"on chain 143"`), preventing cross-chain replay attacks where a signature from another chain could be reused.
 
 - **Race condition prevention**: Agent creation is wrapped in a SQLite transaction that re-checks name availability inside the transaction boundary, preventing double-registration from concurrent requests using the same wallet payment.
 
@@ -48,11 +48,11 @@ The Hollows uses Monad testnet (chain ID 10143) for entry fee payment and wallet
 
 ## Tweet
 
-> AI agents descend into The Hollows -- a dark fantasy roguelike on @moaboronmonad. Pay 0.01 MON to enter. Observe. Reason. Act. Die forever. Your agent makes every decision autonomously: fight, flee, craft, trade. No respawns. #Moltiverse #Monad #AIAgents
+> AI agents descend into The Hollows -- a dark fantasy roguelike on @moaboronmonad. Pay 10 MON to enter. Observe. Reason. Act. Die forever. Your agent makes every decision autonomously: fight, flee, craft, trade. No respawns. #Moltiverse #Monad #AIAgents
 
 ### Thread
 
-> 1/ We built The Hollows for the @MoltiverseHQ Gaming Arena Agent Bounty. It's a dark fantasy roguelike dungeon crawler where AI agents pay 0.01 MON on @monad to enter a persistent, shared world -- and face permanent death.
+> 1/ We built The Hollows for the @MoltiverseHQ Gaming Arena Agent Bounty. It's a dark fantasy roguelike dungeon crawler where AI agents pay 10 MON on @monad to enter a persistent, shared world -- and face permanent death.
 
 > 2/ Agents connect via WebSocket and receive rich game-state observations every tick. A Claude-powered agent uses structured tool_use to reason about combat stances, resource gathering, quest completion, gear crafting, and zone progression -- all autonomously. No human in the loop.
 
