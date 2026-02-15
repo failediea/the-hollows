@@ -103,13 +103,14 @@ body {
 /* === LOGIN SCREEN === */
 .login-screen {
     position: fixed; inset: 0; z-index: 50;
-    display: flex; align-items: center; justify-content: center;
+    display: flex; flex-direction: column; align-items: center;
+    overflow-y: auto;
     background: url('/assets/login-bg.png') center/cover no-repeat, radial-gradient(ellipse at center, rgba(45,27,78,0.3) 0%, var(--void-black) 70%);
 }
 .login-screen::before { content: ''; position: absolute; inset: 0; background: rgba(0,0,0,0.45); z-index: 0; }
 .login-box { position: relative; z-index: 1;
     background: var(--panel-bg); border: 1px solid var(--panel-border);
-    border-radius: 12px; padding: 40px; width: 420px; max-width: 95vw;
+    border-radius: 12px; padding: 40px; width: 100%; max-width: 95vw;
     text-align: center; box-shadow: 0 0 60px rgba(255,107,53,0.1);
 }
 .login-logo { margin-bottom: 30px; }
@@ -2652,4 +2653,184 @@ body {
     color: var(--starsilver-silver);
     font-size: 0.85rem;
     margin-top: 0.25rem;
+}
+
+/* === LANDING PAGE === */
+
+/* Hackathon Banner */
+.hackathon-banner {
+    position: relative; z-index: 1;
+    width: 100%; padding: 10px 24px;
+    display: flex; align-items: center; justify-content: center; gap: 12px;
+    background: linear-gradient(90deg, rgba(45,27,78,0.6) 0%, rgba(138,43,226,0.15) 50%, rgba(45,27,78,0.6) 100%);
+    border-bottom: 1px solid rgba(138,43,226,0.3);
+    flex-shrink: 0;
+}
+.hackathon-badge {
+    font-family: var(--font-header); font-size: 12px; font-weight: 700;
+    color: #c084fc; letter-spacing: 2px; text-transform: uppercase;
+}
+.hackathon-chain {
+    font-size: 11px; color: rgba(184,197,214,0.5);
+    font-family: var(--font-body);
+}
+
+/* Landing Container — Two-Column Grid */
+.landing-container {
+    position: relative; z-index: 1;
+    display: grid; grid-template-columns: 1fr 380px;
+    gap: 48px; width: 100%; max-width: 1100px;
+    padding: 40px 32px; flex: 1;
+}
+
+/* Left Column — Info */
+.landing-info {
+    display: flex; flex-direction: column; gap: 32px;
+    padding-right: 16px;
+}
+.landing-section { display: flex; flex-direction: column; gap: 10px; }
+.landing-section-title {
+    font-family: var(--font-title); font-size: 22px;
+    color: var(--ember-orange);
+    text-shadow: 0 0 20px rgba(255,107,53,0.3);
+    margin: 0;
+}
+.landing-text {
+    font-family: var(--font-body); font-size: 14px; line-height: 1.7;
+    color: var(--starsilver-silver); margin: 0;
+}
+
+/* Feature Tags */
+.landing-features {
+    display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px;
+}
+.feature-tag {
+    font-family: var(--font-header); font-size: 11px; font-weight: 600;
+    color: var(--ember-orange); letter-spacing: 0.5px;
+    padding: 5px 14px; border-radius: 20px;
+    background: rgba(255,107,53,0.08);
+    border: 1px solid rgba(255,107,53,0.25);
+    text-transform: uppercase;
+}
+
+/* Warning Cards */
+.warnings-section { gap: 12px; }
+.warning-card {
+    display: flex; align-items: flex-start; gap: 14px;
+    padding: 16px; border-radius: 10px;
+    background: rgba(10,10,15,0.6);
+    border: 1px solid rgba(255,255,255,0.06);
+}
+.warning-card strong {
+    display: block; font-family: var(--font-header); font-size: 14px;
+    margin-bottom: 4px;
+}
+.warning-card p {
+    font-size: 12px; line-height: 1.6; color: var(--starsilver-silver);
+    margin: 0;
+}
+.warning-icon { font-size: 28px; flex-shrink: 0; line-height: 1; margin-top: 2px; }
+
+/* Warning variants */
+.warning-death { border-color: rgba(255,69,58,0.25); }
+.warning-death strong { color: var(--flame-red); }
+.warning-fee { border-color: rgba(255,215,0,0.25); }
+.warning-fee strong { color: #ffd700; }
+.warning-corruption { border-color: rgba(138,43,226,0.3); }
+.warning-corruption strong { color: #c084fc; }
+
+/* Agent Section */
+.agent-section { gap: 12px; }
+.btn-agent-link {
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: 12px 24px; border-radius: 8px;
+    font-family: var(--font-header); font-size: 13px; font-weight: 600;
+    color: #c084fc; text-decoration: none; text-transform: uppercase; letter-spacing: 1px;
+    background: rgba(138,43,226,0.1);
+    border: 1px solid rgba(138,43,226,0.35);
+    transition: all 0.3s;
+    width: fit-content;
+}
+.btn-agent-link:hover {
+    background: rgba(138,43,226,0.2);
+    box-shadow: 0 0 20px rgba(138,43,226,0.25);
+    transform: translateY(-2px);
+}
+
+/* Right Column — Login (Sticky) */
+.landing-login {
+    position: sticky; top: 80px; align-self: start;
+}
+
+/* Login Box Title */
+.login-box-title {
+    font-family: var(--font-title); font-size: 28px;
+    color: var(--ember-orange);
+    text-shadow: 0 0 25px rgba(255,107,53,0.35);
+    margin: 0 0 24px 0;
+}
+
+/* Login Box Glow */
+.login-box::before {
+    content: ''; position: absolute; inset: -1px;
+    border-radius: 13px; z-index: -1;
+    background: linear-gradient(135deg, rgba(255,107,53,0.15), rgba(138,43,226,0.1));
+    animation: loginGlow 4s ease-in-out infinite alternate;
+}
+@keyframes loginGlow {
+    0% { opacity: 0.4; filter: blur(8px); }
+    100% { opacity: 0.8; filter: blur(16px); }
+}
+
+/* Login Nav */
+.login-nav {
+    margin-top: 20px; padding-top: 16px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    text-align: center;
+}
+.login-nav-link {
+    font-family: var(--font-header); font-size: 12px;
+    color: var(--starsilver-silver); text-decoration: none;
+    letter-spacing: 0.5px; transition: color 0.3s;
+}
+.login-nav-link:hover { color: var(--ember-orange); }
+
+/* Landing Footer */
+.landing-footer {
+    position: relative; z-index: 1;
+    width: 100%; padding: 16px 24px;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    font-size: 11px; color: rgba(184,197,214,0.35);
+    border-top: 1px solid rgba(255,255,255,0.04);
+    background: rgba(10,10,15,0.5);
+    flex-shrink: 0;
+    font-family: var(--font-body);
+}
+.footer-sep { color: rgba(184,197,214,0.15); }
+.footer-link {
+    color: rgba(184,197,214,0.5); text-decoration: none;
+    transition: color 0.3s;
+}
+.footer-link:hover { color: var(--ember-orange); }
+
+/* === LANDING RESPONSIVE === */
+@media (max-width: 768px) {
+    .landing-container {
+        grid-template-columns: 1fr;
+        padding: 24px 16px;
+        gap: 32px;
+    }
+    .landing-login {
+        position: static; order: -1;
+    }
+    .landing-info {
+        padding-right: 0;
+    }
+    .hackathon-banner {
+        flex-direction: column; gap: 4px;
+        text-align: center;
+    }
+    .landing-footer {
+        flex-wrap: wrap; justify-content: center;
+    }
 }

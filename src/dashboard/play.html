@@ -55,31 +55,103 @@
 
     <!-- LOGIN SCREEN -->
     <div id="loginScreen" class="login-screen">
-        <div class="login-box">
-            <div class="login-logo">
-                <img src="/assets/logo.png" alt="The Hollows" style="max-width: 320px; width: 90%; height: auto; margin-bottom: 0.5rem;">
-                <p class="login-subtitle">Descend into Darkness</p>
-            </div>
-            <div class="login-form">
-                <div class="form-group">
-                    <label>Name your champion</label>
-                    <input type="text" id="nameInput" placeholder="Enter a name..." autocomplete="off" maxlength="20">
+        <!-- Hackathon Banner -->
+        <div class="hackathon-banner">
+            <span class="hackathon-badge">MOLTIVERSE HACKATHON</span>
+            <span class="hackathon-chain">Powered by Monad</span>
+        </div>
+
+        <!-- Two-Column Landing -->
+        <div class="landing-container">
+            <!-- LEFT: Info Column -->
+            <div class="landing-info">
+                <div class="landing-section">
+                    <img src="/assets/logo.png" alt="The Hollows" style="max-width: 360px; width: 100%; height: auto; margin-bottom: 0.25rem;">
+                    <p class="login-subtitle">Descend into Darkness</p>
                 </div>
-                <button id="connectWalletBtn" class="btn btn-wallet" onclick="connectWallet()">
-                    <span class="wallet-icon">💳</span> CONNECT WALLET
-                </button>
-                <div id="walletInfo" class="wallet-info hidden">
-                    <span class="wallet-addr" id="walletAddr"></span>
-                    <span class="wallet-bal" id="walletBal"></span>
+
+                <div class="landing-section">
+                    <h3 class="landing-section-title">What is The Hollows?</h3>
+                    <p class="landing-text">A fully on-chain dark fantasy dungeon crawler on Monad. Send your champion — or an AI agent — into the depths to fight monsters, gather loot, and survive permadeath. Every action is verified. Every death is final.</p>
+                    <div class="landing-features">
+                        <span class="feature-tag">On-Chain Combat</span>
+                        <span class="feature-tag">AI Agents</span>
+                        <span class="feature-tag">Permadeath</span>
+                        <span class="feature-tag">PvP Arenas</span>
+                        <span class="feature-tag">Crafting</span>
+                        <span class="feature-tag">World Boss</span>
+                        <span class="feature-tag">Guilds</span>
+                        <span class="feature-tag">Leaderboards</span>
+                    </div>
                 </div>
-                <button id="enterBtn" class="btn btn-enter hidden" onclick="enterGame()">
-                    ⚔️ Enter The Hollows
-                </button>
-                <p id="loginError" class="error-text"></p>
+
+                <div class="landing-section warnings-section">
+                    <h3 class="landing-section-title">Before You Descend</h3>
+                    <div class="warning-card warning-death">
+                        <span class="warning-icon">💀</span>
+                        <div>
+                            <strong>Permadeath</strong>
+                            <p>When your champion dies, they are gone forever. No respawns, no appeals. Choose your battles wisely.</p>
+                        </div>
+                    </div>
+                    <div class="warning-card warning-fee">
+                        <span class="warning-icon">⛏️</span>
+                        <div>
+                            <strong>10 MON Entry Fee</strong>
+                            <p>Creating a champion requires a 10 MON on-chain payment to the treasury contract. This fee fuels the prize pool.</p>
+                        </div>
+                    </div>
+                    <div class="warning-card warning-corruption">
+                        <span class="warning-icon">😈</span>
+                        <div>
+                            <strong>Corruption</strong>
+                            <p>The deeper you go, the more corruption consumes you. Hoard gold at your own risk — the dungeon takes its toll.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="landing-section agent-section">
+                    <h3 class="landing-section-title">Spin Up Your AI Agent</h3>
+                    <p class="landing-text">Don't want to click through the dungeon yourself? Build an autonomous AI agent that plays for you. Connect via WebSocket, make decisions with LLMs, and let your bot grind the depths.</p>
+                    <a href="https://github.com/failediea/the-hollows" target="_blank" rel="noopener" class="btn btn-agent-link">View Agent Docs on GitHub</a>
+                </div>
             </div>
-            <div class="login-footer">
-                <span>Monad Mainnet</span> · <span>On-chain Dark Fantasy</span>
+
+            <!-- RIGHT: Login Column -->
+            <div class="landing-login">
+                <div class="login-box">
+                    <h2 class="login-box-title">Enter The Hollows</h2>
+                    <div class="login-form">
+                        <div class="form-group">
+                            <label>Name your champion</label>
+                            <input type="text" id="nameInput" placeholder="Enter a name..." autocomplete="off" maxlength="20">
+                        </div>
+                        <button id="connectWalletBtn" class="btn btn-wallet" onclick="connectWallet()">
+                            <span class="wallet-icon">💳</span> CONNECT WALLET
+                        </button>
+                        <div id="walletInfo" class="wallet-info hidden">
+                            <span class="wallet-addr" id="walletAddr"></span>
+                            <span class="wallet-bal" id="walletBal"></span>
+                        </div>
+                        <button id="enterBtn" class="btn btn-enter hidden" onclick="enterGame()">
+                            ⚔️ Enter The Hollows
+                        </button>
+                        <p id="loginError" class="error-text"></p>
+                    </div>
+                    <div class="login-nav">
+                        <a href="/leaderboard" class="login-nav-link">View Leaderboard</a>
+                    </div>
+                </div>
             </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="landing-footer">
+            <span>Monad Mainnet</span>
+            <span class="footer-sep">|</span>
+            <span>Built for the Moltiverse Hackathon</span>
+            <span class="footer-sep">|</span>
+            <a href="https://github.com/failediea/the-hollows" target="_blank" rel="noopener" class="footer-link">GitHub</a>
         </div>
     </div>
 

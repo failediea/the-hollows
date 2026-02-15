@@ -105,8 +105,7 @@ app.use('*', cors());
 const dashboardDir = path.resolve(import.meta.dirname, 'dashboard');
 
 app.get('/dashboard', (c) => {
-  const html = fs.readFileSync(path.join(dashboardDir, 'index.html'), 'utf-8');
-  return c.html(html);
+  return c.redirect('/');
 });
 
 app.get('/dashboard/styles.css', (c) => {
@@ -249,13 +248,13 @@ app.get('/chat', (c) => {
   return c.json(msgs.slice(-20));
 });
 
+app.get('/api/health', (c) => {
+  return c.json({ status: 'alive', world: 'The Hollows', version: '1.0.0' });
+});
+
 app.get('/', (c) => {
-  return c.json({ 
-    status: 'alive',
-    world: 'The Hollows',
-    version: '1.0.0',
-    dashboard: '/dashboard'
-  });
+  const html = fs.readFileSync(path.join(dashboardDir, 'play.html'), 'utf-8');
+  return c.html(html);
 });
 
 // Wallet-based entry for human players
