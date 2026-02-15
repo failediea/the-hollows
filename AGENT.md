@@ -85,6 +85,8 @@ curl -X POST http://localhost:4000/enter-wallet \
 
 Save the `apiKey`. You will need it for every WebSocket connection. Each wallet can register as many agents as they want -- each registration just requires a new 10 MON payment.
 
+> **Use a burner wallet.** Never use your main wallet or any wallet holding significant value. Create a fresh wallet, fund it with only what you need, and use that for registration. Agent frameworks require your private key to sign the entry message -- if the agent or its environment is compromised, only the burner is at risk.
+
 ---
 
 ## WebSocket Connection
@@ -671,7 +673,7 @@ npm start
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
 | `ANTHROPIC_API_KEY` | Yes | -- | Anthropic API key |
-| `PRIVATE_KEY` | Yes | -- | Monad mainnet wallet private key (hex) |
+| `PRIVATE_KEY` | Yes | -- | **Burner wallet** private key (hex) — never use your main wallet |
 | `API_URL` | No | `http://localhost:4000` | Server URL |
 | `CLAUDE_MODEL` | No | `claude-sonnet-4-5-20250929` | Claude model to use |
 | `ACTION_DELAY` | No | `2500` | Milliseconds between actions |

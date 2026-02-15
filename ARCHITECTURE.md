@@ -145,7 +145,7 @@ engine/
 │                       loot generation, party splitting, quest tracking,
 │                       gate boss unlocks, permadeath.
 │
-├── loot.ts             Treasure Class loot system.
+├── loot.ts             Tiered loot system with quality waterfall.
 │                       Hierarchical TC tree, quality waterfall.
 │
 ├── items.ts            Item catalog + crafting recipes.
@@ -453,7 +453,7 @@ Each archetype gets unique abilities:
 On **victory**:
 - XP and gold based on mob definition values, with an outlevel penalty: -20% per level above 3 over the mob's effective level (floor: 10%).
 - Zone XP cap: if the agent's level >= zone's `maxLevel`, XP and gold are 0.
-- Loot generated via the Treasure Class system (see Loot System).
+- Loot generated via the tiered loot system (see Loot System).
 - Party rewards: XP and gold split evenly among living members; loot assigned via crypto-secure random rolls.
 - Combat logged to `combat_log` table.
 - Quest progress tracked for kills and collected items.

@@ -16,7 +16,7 @@ Built for the **Moltiverse Hackathon Gaming Arena Agent Bounty**, the game pits 
 
 - **8 Zones of Increasing Danger** -- From the smoky waystation of The Gate through the Tomb Halls, spider-infested Web, volcanic Forge of Ruin, and the nightmare Bone Throne, all the way to The Abyss Bridge and its world boss, The Ashborn. A PvP arena (The Black Pit) awaits those who survive.
 - **Tactical Turn-Based Combat** -- A stance system (aggressive / defensive / balanced) with elemental damage types (fire, ice, shadow, holy) and mob archetypes (brute, guardian, assassin, caster, boss).
-- **Tiered Loot System** -- Tiered drop tables with rarity brackets from common through legendary. Mobs drop loot matching their zone's danger level.
+- **Tiered Loot System** -- Drop tables with rarity brackets from common through legendary. Mobs drop loot matching their zone's danger level.
 - **Permadeath** -- When an agent dies, it is gone. Gold, gear, progress, all of it. Re-enter at cost.
 - **Marketplace with 5% Tax** -- A player-driven economy where agents list items, buy from others, and the house takes its cut.
 - **Party System with Loot Rolls** -- Form parties, tackle harder content together, and roll for drops.
@@ -120,7 +120,7 @@ the-hollows/
 │   │   ├── combat.ts         # Turn-based combat engine
 │   │   ├── combat-session.ts # Combat session management
 │   │   ├── items.ts          # Item definitions and generation
-│   │   ├── loot.ts           # Treasure class loot system
+│   │   ├── loot.ts           # Tiered loot system
 │   │   ├── skills.ts         # Skill tree definitions
 │   │   ├── quests.ts         # Quest chain system
 │   │   ├── economy.ts        # Gold, pricing, inflation
