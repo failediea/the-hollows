@@ -375,11 +375,21 @@ app.post('/enter-wallet', async (c) => {
     }
 
     // Create new agent (wrapped in transaction to prevent race conditions)
+    // The on-chain count was fetched above; re-check server count inside the
+    // transaction so a concurrent request can't slip through with the same payment.
     const { createAgent } = await import('./engine/agent.js');
     const createInTransaction = db.transaction(() => {
       // Re-check name not taken inside transaction
       const taken = db.prepare('SELECT id FROM agents WHERE name = ?').get(name);
       if (taken) throw new Error('Agent name already taken');
+
+      // Atomically verify server count < on-chain entries
+      const serverCount = db.prepare('SELECT COUNT(*) as cnt FROM agents WHERE LOWER(wallet_address) = ?')
+        .get(walletAddress.toLowerCase()) as { cnt: number };
+      if (paymentCheck.onChainEntries == null || paymentCheck.onChainEntries <= serverCount.cnt) {
+        throw new Error('Entry fee not paid on-chain. Pay 10 MON to the treasury contract first.');
+      }
+
       return createAgent(db, name, walletAddress, season.id);
     });
 

@@ -234,12 +234,27 @@ export function createCombatRoutes(db: Database.Database) {
    * POST /api/combat/:id/auto
    * Explicit client timeout fallback - triggers auto-action
    */
-  app.post('/api/combat/:id/auto', (c) => {
+  app.post('/api/combat/:id/auto', async (c) => {
     const combatId = c.req.param('id');
+    const body = await c.req.json().catch(() => ({}));
+    const apiKey = getApiKeyFromRequest(c, body);
+    if (!apiKey) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const agent = db.prepare('SELECT * FROM agents WHERE api_key = ?').get(apiKey) as Agent | undefined;
+    if (!agent) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
     const session = getCombatSession(combatId);
 
     if (!session) {
       return c.json({ error: 'Combat session not found' }, 404);
+    }
+
+    if (session.agentId !== agent.id) {
+      return c.json({ error: 'Unauthorized — not your combat session' }, 403);
     }
 
     if (session.status !== 'awaiting_input') {

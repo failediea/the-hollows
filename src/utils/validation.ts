@@ -16,7 +16,7 @@ const TREASURY_ADDRESS = '0x23d916bd5c4c5a88e2ee1ee124ca320902f79820' as const;
  * Verify that the wallet has paid the on-chain entry fee.
  * Compares on-chain entry count with server-side agent count.
  */
-export async function verifyEntryPayment(walletAddress: string, db: Database.Database): Promise<{ paid: boolean; error?: string }> {
+export async function verifyEntryPayment(walletAddress: string, db: Database.Database): Promise<{ paid: boolean; error?: string; onChainEntries?: number }> {
   try {
     const publicClient = createPublicClient({ chain: monadMainnet, transport: http() });
     const onChainEntries = await publicClient.readContract({
@@ -36,11 +36,10 @@ export async function verifyEntryPayment(walletAddress: string, db: Database.Dat
     if (Number(onChainEntries) <= serverCount.cnt) {
       return { paid: false, error: 'Entry fee not paid on-chain. Pay 10 MON to the treasury contract first.' };
     }
-    return { paid: true };
+    return { paid: true, onChainEntries: Number(onChainEntries) };
   } catch (error) {
     console.error('On-chain verification error:', error);
-    // If on-chain check fails (RPC down), allow entry with warning
-    return { paid: true };
+    return { paid: false, error: 'Unable to verify payment. Please try again.' };
   }
 }
 

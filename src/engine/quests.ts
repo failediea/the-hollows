@@ -360,52 +360,57 @@ export function trackQuestProgress(
 }
 
 // Claim rewards for a completed quest
-export function claimQuestReward(db: Database.Database, agentId: number, questId: string): 
+export function claimQuestReward(db: Database.Database, agentId: number, questId: string):
   { success: boolean; message: string; rewards?: any } {
-  
+
   const quest = QUESTS.find(q => q.id === questId);
   if (!quest) return { success: false, message: 'Quest not found' };
 
-  const row = db.prepare('SELECT * FROM quest_progress WHERE agent_id = ? AND quest_id = ?')
-    .get(agentId, questId) as any;
+  const claimTransaction = db.transaction(() => {
+    const row = db.prepare('SELECT * FROM quest_progress WHERE agent_id = ? AND quest_id = ?')
+      .get(agentId, questId) as any;
 
-  if (!row || !row.completed) return { success: false, message: 'Quest not completed' };
-  if (row.claimed) return { success: false, message: 'Already claimed' };
+    if (!row || !row.completed) return { success: false, message: 'Quest not completed' };
+    if (row.claimed) return { success: false, message: 'Already claimed' };
 
-  // Grant rewards
-  const r = quest.rewards;
-  if (r.xp) db.prepare('UPDATE agents SET xp = xp + ? WHERE id = ?').run(r.xp, agentId);
-  if (r.gold) db.prepare('UPDATE agents SET gold = gold + ? WHERE id = ?').run(r.gold, agentId);
-  if (r.skillPoints) db.prepare('UPDATE agents SET skill_points = skill_points + ? WHERE id = ?').run(r.skillPoints, agentId);
-  if (r.item) {
-    const existing = db.prepare('SELECT id FROM inventory WHERE agent_id = ? AND item_code = ?').get(agentId, r.item.code) as any;
-    if (existing) {
-      db.prepare('UPDATE inventory SET quantity = quantity + ? WHERE id = ?').run(r.item.quantity, existing.id);
-    } else {
-      db.prepare('INSERT INTO inventory (agent_id, item_code, quantity, acquired_at) VALUES (?, ?, ?, ?)')
-        .run(agentId, r.item.code, r.item.quantity, Date.now());
+    // Mark claimed first to prevent double-claim
+    db.prepare('UPDATE quest_progress SET claimed = 1 WHERE agent_id = ? AND quest_id = ?')
+      .run(agentId, questId);
+
+    // Grant rewards
+    const r = quest.rewards;
+    if (r.xp) db.prepare('UPDATE agents SET xp = xp + ? WHERE id = ?').run(r.xp, agentId);
+    if (r.gold) db.prepare('UPDATE agents SET gold = gold + ? WHERE id = ?').run(r.gold, agentId);
+    if (r.skillPoints) db.prepare('UPDATE agents SET skill_points = skill_points + ? WHERE id = ?').run(r.skillPoints, agentId);
+    if (r.item) {
+      const existing = db.prepare('SELECT id FROM inventory WHERE agent_id = ? AND item_code = ?').get(agentId, r.item.code) as any;
+      if (existing) {
+        db.prepare('UPDATE inventory SET quantity = quantity + ? WHERE id = ?').run(r.item.quantity, existing.id);
+      } else {
+        db.prepare('INSERT INTO inventory (agent_id, item_code, quantity, acquired_at) VALUES (?, ?, ?, ?)')
+          .run(agentId, r.item.code, r.item.quantity, Date.now());
+      }
     }
-  }
 
-  // Check level up
-  const agent = db.prepare('SELECT xp, level FROM agents WHERE id = ?').get(agentId) as any;
-  const xpThresholds = [0, 50, 120, 220, 350, 520, 730, 1000, 1350, 1800, 2400, 3200, 4200, 5500, 7200];
-  let newLevel = agent.level;
-  while (newLevel < xpThresholds.length - 1 && agent.xp >= xpThresholds[newLevel]) {
-    newLevel++;
-  }
-  if (newLevel > agent.level) {
-    const hpGain = (newLevel - agent.level) * 10;
-    db.prepare('UPDATE agents SET level = ?, max_hp = max_hp + ?, hp = MIN(hp + ?, max_hp + ?), atk = atk + ?, def = def + ?, spd = spd + ? WHERE id = ?')
-      .run(newLevel, hpGain, hpGain, hpGain, newLevel - agent.level, newLevel - agent.level, newLevel - agent.level, agentId);
-  }
+    // Check level up
+    const agent = db.prepare('SELECT xp, level FROM agents WHERE id = ?').get(agentId) as any;
+    const xpThresholds = [0, 50, 120, 220, 350, 520, 730, 1000, 1350, 1800, 2400, 3200, 4200, 5500, 7200];
+    let newLevel = agent.level;
+    while (newLevel < xpThresholds.length - 1 && agent.xp >= xpThresholds[newLevel]) {
+      newLevel++;
+    }
+    if (newLevel > agent.level) {
+      const hpGain = (newLevel - agent.level) * 10;
+      db.prepare('UPDATE agents SET level = ?, max_hp = max_hp + ?, hp = MIN(hp + ?, max_hp + ?), atk = atk + ?, def = def + ?, spd = spd + ? WHERE id = ?')
+        .run(newLevel, hpGain, hpGain, hpGain, newLevel - agent.level, newLevel - agent.level, newLevel - agent.level, agentId);
+    }
 
-  db.prepare('UPDATE quest_progress SET claimed = 1 WHERE agent_id = ? AND quest_id = ?')
-    .run(agentId, questId);
+    return {
+      success: true,
+      message: `🎉 Quest "${quest.name}" complete!`,
+      rewards: r,
+    };
+  });
 
-  return {
-    success: true,
-    message: `🎉 Quest "${quest.name}" complete!`,
-    rewards: r,
-  };
+  return claimTransaction() as { success: boolean; message: string; rewards?: any };
 }
