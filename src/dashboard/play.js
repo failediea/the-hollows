@@ -594,12 +594,23 @@ function addChatMessage(msg) {
 function renderChat() {
     const el = document.getElementById('chatMessages');
     if (!el) return;
-    el.innerHTML = chatMessages.map(m => {
+    el.innerHTML = '';
+    chatMessages.forEach(m => {
+        const div = document.createElement('div');
+        div.className = m.system ? 'chat-msg system-msg' : 'chat-msg';
+        const author = document.createElement('span');
+        author.className = 'chat-author';
+        author.textContent = m.author;
+        const text = document.createElement('span');
+        text.className = 'chat-text';
+        text.textContent = m.text;
+        const time = document.createElement('span');
+        time.className = 'chat-time';
         const t = new Date(m.time);
-        const ts = t.getHours().toString().padStart(2,'0') + ':' + t.getMinutes().toString().padStart(2,'0');
-        const cls = m.system ? 'chat-msg system-msg' : 'chat-msg';
-        return `<div class="${cls}"><span class="chat-author">${m.author}</span><span class="chat-text">${m.text}</span><span class="chat-time">${ts}</span></div>`;
-    }).join('');
+        time.textContent = t.getHours().toString().padStart(2,'0') + ':' + t.getMinutes().toString().padStart(2,'0');
+        div.append(author, text, time);
+        el.appendChild(div);
+    });
     el.scrollTop = el.scrollHeight;
 }
 

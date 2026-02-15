@@ -14,6 +14,7 @@ import {
 import { processCombatOutcome } from '../engine/combat-outcome.js';
 import { RATE_LIMIT_SECONDS, ALLOWED_ACTIONS } from '../utils/validation.js';
 import { getZoneQuests } from '../engine/quests.js';
+import { chatLog, registerAgentConnection, removeAgentConnection, checkChatRateLimit, recordChatSent, broadcastToZone } from '../chat.js';
 import type {
   AgentObservation,
   ActionResultMessage,
@@ -207,6 +208,7 @@ export function buildObservation(db: Database.Database, agentId: number): AgentO
       claimed: q.claimed,
     })),
     availableActions,
+    chat: chatLog.filter(m => m.zone === agent.zone_id).slice(-10).map(m => ({ author: m.author, text: m.text, time: m.time })),
     world: {
       season: season?.id || 1,
       worldBoss: worldBoss
@@ -248,6 +250,8 @@ function computeAvailableActions(
     'unequip_item',
     'claim_quest',
   ];
+
+  actions.push('chat');
 
   if (nearbyPlayers.length > 0) {
     actions.push('trade');
@@ -324,6 +328,10 @@ function validateActionParams(action: string, target?: string, params?: Record<s
         return 'Invalid resource ID format';
       }
       break;
+    case 'chat':
+      if (!params?.message || typeof params.message !== 'string') return 'message param required';
+      if (params.message.length > 200) return 'Chat message too long (max 200)';
+      break;
   }
   return null;
 }
@@ -338,6 +346,10 @@ export function handleAgentConnection(ws: WebSocket, db: Database.Database, agen
     agentId: agent.id,
     agentName: agent.name,
   });
+
+  // Register for chat broadcasts
+  registerAgentConnection(agent.id, ws);
+  ws.on('close', () => removeAgentConnection(agent.id));
 
   // Send initial observation
   send(ws, buildObservation(db, agent.id));
@@ -395,6 +407,25 @@ async function handleGameAction(
   const paramError = validateActionParams(action, target, params);
   if (paramError) {
     sendError(ws, paramError, id);
+    return;
+  }
+
+  // Chat is handled separately — no game rate limit, has its own rate limit
+  if (action === 'chat') {
+    const agent = db.prepare('SELECT * FROM agents WHERE id = ?').get(agentId) as Agent;
+    if (!agent || agent.is_dead) { sendError(ws, 'Cannot chat', id); return; }
+    const rateCheck = checkChatRateLimit(agentId);
+    if (!rateCheck.allowed) { sendError(ws, `Chat rate limited. Wait ${rateCheck.waitSeconds}s.`, id); return; }
+    const message = params?.message;
+    if (!message || typeof message !== 'string' || message.length < 1 || message.length > 200) {
+      sendError(ws, 'Chat message must be 1-200 characters', id); return;
+    }
+    const chatMsg = { author: agent.name, text: message.slice(0, 200), time: Date.now(), zone: agent.zone_id };
+    chatLog.push(chatMsg);
+    if (chatLog.length > 200) chatLog.shift();
+    recordChatSent(agentId);
+    broadcastToZone(db, agent.zone_id, { type: 'chat_message', ...chatMsg } as any);
+    send(ws, { type: 'action_result', id, success: true, message: 'Message sent' } as any);
     return;
   }
 

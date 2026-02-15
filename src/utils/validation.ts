@@ -96,6 +96,7 @@ export const ALLOWED_ACTIONS = [
   'reject_trade',
   'cancel_trade',
   'claim_quest',
+  'chat',
 ];
 
 /**

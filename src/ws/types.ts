@@ -111,6 +111,7 @@ export interface AgentObservation {
     claimed: boolean;
   }>;
   availableActions: string[];
+  chat: Array<{ author: string; text: string; time: number }>;
   world: {
     season: number;
     worldBoss: {
@@ -131,13 +132,21 @@ export interface ActionResultMessage {
   observation: AgentObservation;
 }
 
+export interface ChatMessage {
+  type: 'chat_message';
+  author: string;
+  text: string;
+  time: number;
+  zone: string;
+}
+
 export interface ErrorMessage {
   type: 'error';
   id?: string;
   error: string;
 }
 
-export type ServerMessage = WelcomeMessage | AgentObservation | ActionResultMessage | ErrorMessage;
+export type ServerMessage = WelcomeMessage | AgentObservation | ActionResultMessage | ChatMessage | ErrorMessage;
 
 // ============ Agent → Server Messages ============
 

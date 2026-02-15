@@ -224,8 +224,7 @@ app.get('/assets/*', (c) => {
 });
 
 // ============ CHAT ============
-const chatLog: { author: string; text: string; time: number; zone: string; system?: boolean }[] = [];
-const MAX_CHAT_LOG = 200;
+import { chatLog, MAX_CHAT_LOG, broadcastToZone } from './chat.js';
 
 app.post('/chat', async (c) => {
   try {
@@ -238,6 +237,7 @@ app.post('/chat', async (c) => {
     const msg = { author: agent.name, text: message.slice(0, 200), time: Date.now(), zone: agent.zone_id };
     chatLog.push(msg);
     if (chatLog.length > MAX_CHAT_LOG) chatLog.shift();
+    broadcastToZone(db, agent.zone_id, { type: 'chat_message', ...msg });
     return c.json({ success: true });
   } catch { return c.json({ error: 'Chat failed' }, 500); }
 });

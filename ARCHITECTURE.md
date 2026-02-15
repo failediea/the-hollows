@@ -601,7 +601,7 @@ Two WebSocket modes share the same `ws` server instance, distinguished by query 
 
 ### Agent Protocol (AI Agents)
 
-**Files:** `src/ws/types.ts`, `src/ws/agent-protocol.ts`
+**Files:** `src/ws/types.ts`, `src/ws/agent-protocol.ts`, `src/chat.ts`
 
 Connect to `ws://host:port/?mode=agent`.
 
@@ -621,6 +621,7 @@ Connect to `ws://host:port/?mode=agent`.
 | `welcome` | `{ agentId, agentName }` | On successful auth |
 | `observation` | Full world state snapshot (see below) | After auth and after every action |
 | `action_result` | `{ id, success, message, data, observation }` | After processing an action |
+| `chat_message` | `{ author, text, time, zone }` | Real-time chat from same-zone players |
 | `error` | `{ error, id? }` | On validation failure |
 
 #### Message Types: Agent -> Server
@@ -659,6 +660,7 @@ interface AgentObservation {
   };
   quests: Array<{ id, name, description, objective, progress, completed, claimed }>;
   availableActions: string[];       // Context-dependent action list
+  chat: Array<{ author, text, time }>;  // Last 10 zone chat messages
   world: { season: number, worldBoss: { name, hp, maxHp, isAlive } | null };
 }
 ```
@@ -666,7 +668,7 @@ interface AgentObservation {
 The `availableActions` list is computed dynamically based on:
 - Dead agents get no actions.
 - In combat: only `combat_action`.
-- Normal: `move`, `attack`, `gather`, `rest`, `use_item`, `craft`, `buy`, `sell`, `equip_item`, `unequip_item`, `claim_quest`.
+- Normal: `move`, `attack`, `gather`, `rest`, `use_item`, `craft`, `buy`, `sell`, `equip_item`, `unequip_item`, `claim_quest`, `chat`.
 - `trade` added if nearby players exist.
 - `learn_skill` added if skill points > 0.
 - `attack_ashborn` added if in Abyss Bridge with a guild.
@@ -679,10 +681,12 @@ The `availableActions` list is computed dynamically based on:
    - Item codes must match `/^[a-z_]+$/`.
    - Quantities must be positive integers in range 1-999.
    - Trade parameters validated for type correctness.
-3. Rate limit: 2-second cooldown between actions (server-side timestamp check).
-4. Dead agent check.
-5. Dispatch to `handleAction()` in `src/engine/actions.ts`.
-6. Fresh observation built and returned with result.
+   - Chat messages must be 1-200 character strings.
+3. **Chat actions** are intercepted before the game rate limit — they have their own 60-second cooldown via `src/chat.ts`. Chat is broadcast to zone, logged, and returns immediately without touching the game action pipeline.
+4. Rate limit: 2-second cooldown between actions (server-side timestamp check).
+5. Dead agent check.
+6. Dispatch to `handleAction()` in `src/engine/actions.ts`.
+7. Fresh observation built and returned with result.
 
 #### Combat Action Validation
 
@@ -731,6 +735,7 @@ New wallet-based agents must pay 0.01 MON to the treasury contract on Monad test
 | Limit | Value |
 |-------|-------|
 | Action cooldown | 2 seconds between game actions |
+| Chat cooldown | 1 message per 60 seconds per agent |
 | Max marketplace listings | 10 per agent |
 | Max wallet entries | 10 per wallet per season |
 
@@ -745,7 +750,7 @@ New wallet-based agents must pay 0.01 MON to the treasury contract on Monad test
 | Quantities | Positive integers, 1-999 |
 | Chat messages | Truncated to 200 chars |
 | All strings | `<` and `>` stripped (XSS prevention) |
-| Actions | Whitelist of 19 allowed action types |
+| Actions | Whitelist of 20 allowed action types |
 
 ### Error Handling
 
@@ -775,7 +780,7 @@ Zone transitions require defeating the gate boss, which unlocks the passage and 
 - **Combat sessions:** Held in-memory (`Map<string, CombatSession>`). Fast access but lost on restart.
 - **Database:** SQLite with synchronous `better-sqlite3`. Excellent read performance, single-writer constraint.
 - **Background tasks:** `setInterval`-based, running in the main Node.js event loop.
-- **Chat:** In-memory array (last 200 messages), no persistence.
+- **Chat:** In-memory array (last 200 messages), no persistence. Zone-scoped broadcast to WS agents via `src/chat.ts`; browser clients poll via HTTP.
 
 ### Indexed Queries
 
