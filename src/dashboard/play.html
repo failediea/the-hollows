@@ -251,7 +251,7 @@
                     </div>
 
                     <div class="zone-connections">
-                        <h3>Connected Zones</h3>
+                        <h3 class="zone-section-title">Connected Zones</h3>
                         <div id="connectedZones" class="connected-zones-grid"></div>
                     </div>
                 </div>
@@ -332,31 +332,24 @@
                 </div>
             </main>
 
-            <!-- RIGHT: Others + Activity Feed -->
+            <!-- RIGHT: Others + Activity Feed + Chat -->
             <div class="panel-right-wrap">
-                <button class="panel-toggle-btn" id="rightPanelToggle" onclick="toggleRightPanel()" title="Toggle panel">▶</button>
                 <aside class="panel panel-right" id="rightPanel">
-                <div class="collapsible-section">
-                    <div class="section-header collapsible-header" onclick="toggleSection('othersSection', this)">👤 Others Here <span class="collapse-icon">▾</span></div>
-                    <div class="collapsible-body" id="othersSection">
-                        <div id="zoneAgentsList" class="zone-agents-list"></div>
-                    </div>
+                <div class="right-section others-section">
+                    <div class="section-header">👤 Others Here</div>
+                    <div id="zoneAgentsList" class="zone-agents-list"></div>
                 </div>
-                <div class="collapsible-section">
-                    <div class="section-header collapsible-header" onclick="toggleSection('activitySection', this)">📜 Activity Feed <span class="collapse-icon">▾</span></div>
-                    <div class="collapsible-body" id="activitySection">
-                        <div class="activity-feed" id="activityFeed"></div>
-                    </div>
+                <div class="right-section activity-section">
+                    <div class="section-header">📜 Activity Feed</div>
+                    <div class="activity-feed" id="activityFeed"></div>
                 </div>
-                <div class="collapsible-section chat-section">
-                    <div class="section-header collapsible-header" onclick="toggleSection('chatSection', this)">💬 Chat <span class="collapse-icon">▾</span></div>
-                    <div class="collapsible-body" id="chatSection">
-                        <div class="chat-panel">
-                            <div class="chat-messages" id="chatMessages"></div>
-                            <div class="chat-input-row">
-                                <input type="text" class="chat-input" id="chatInput" placeholder="Say something..." maxlength="200" onkeydown="if(event.key==='Enter')sendChat()">
-                                <button class="chat-send-btn" onclick="sendChat()">➤</button>
-                            </div>
+                <div class="right-section chat-section">
+                    <div class="section-header">💬 Chat</div>
+                    <div class="chat-panel">
+                        <div class="chat-messages" id="chatMessages"></div>
+                        <div class="chat-input-row">
+                            <input type="text" class="chat-input" id="chatInput" placeholder="Say something..." maxlength="200" onkeydown="if(event.key==='Enter')sendChat()">
+                            <button class="chat-send-btn" onclick="sendChat()">➤</button>
                         </div>
                     </div>
                 </div>

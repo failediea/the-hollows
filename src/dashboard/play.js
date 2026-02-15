@@ -579,25 +579,6 @@ function renderInventory() {
     });
 }
 
-function toggleRightPanel() {
-    const panel = document.getElementById('rightPanel');
-    const btn = document.getElementById('rightPanelToggle');
-    if (!panel) return;
-    panel.classList.toggle('collapsed-panel');
-    const isCollapsed = panel.classList.contains('collapsed-panel');
-    btn.textContent = isCollapsed ? '◀' : '▶';
-    // Adjust grid
-    const layout = document.querySelector('.game-layout');
-    if (layout) layout.style.gridTemplateColumns = isCollapsed ? '260px 1fr 24px' : '260px 1fr 260px';
-}
-
-function toggleSection(sectionId, headerEl) {
-    const body = document.getElementById(sectionId);
-    const icon = headerEl.querySelector('.collapse-icon');
-    if (!body) return;
-    body.classList.toggle('collapsed');
-    if (icon) icon.classList.toggle('collapsed');
-}
 
 // ============ CHAT ============
 let chatMessages = [];
@@ -779,7 +760,6 @@ function renderZoneDetails() {
             mobsEl.innerHTML = zd.mobs.map(m => {
                 const emoji = MOB_EMOJI[m.name] || '👹';
                 const mobArtMap = {'Sewer Rat':'/assets/sewer-rat.png','Giant Rat':'/assets/giant-rat.png','Cave Bat':'/assets/cave-bat.png','Plague Rat':'/assets/blighted-rat.png','Corrupted Hound':'/assets/corrupted-hound.png','Rabid Ghoul':'/assets/rabid-ghoul.png','Wandering Ghost':'/assets/wraith.png','Tomb Shade':'/assets/tomb-shade.png','Gremlin Miner':'/assets/gremlin-miner.png','Skeleton Warrior':'/assets/skeleton-warrior.png','Cave Troll':'/assets/cave-troll.png','Giant Spider':'/assets/giant-spider.png','Broodmother':'/assets/broodmother.png','Brute Smith':'/assets/brute-smith.png','Ember Colossus':'/assets/ember-colossus.png','Death Knight':'/assets/death-knight.png','The Ashborn':'/assets/the-ashborn.png','Skeletal Dragon':'/assets/skeletal-dragon.png'};
-                const mobImg = mobArtMap[m.name] ? `<img src="${mobArtMap[m.name]}" class="mob-card-img" alt="${m.name}">` : '';
                 const elem = m.element ? `<span class="mob-element">${ELEMENT_EMOJI[m.element] || ''} ${m.element}</span>` : '';
                 const drops = m.drop_table?.map(d => `${ITEM_EMOJI[d.item] || '📦'} ${Math.round(d.chance*100)}%`).join('  ') || 'None';
                 
@@ -805,20 +785,19 @@ function renderZoneDetails() {
                 const recAtk = (m.def || 0) + Math.ceil((m.hp || 1) / 8);
                 const recDef = Math.max(1, (m.atk || 0) - Math.floor(pHp / 6));
                 
-                const hpPct = m.hp > 0 ? 100 : 0;
                 const mobImgSrc = mobArtMap[m.name] || '';
-                const portrait = mobImgSrc ? `<img src="${mobImgSrc}" class="mob-portrait" alt="${m.name}">` : `<span class="mob-portrait-emoji">${emoji}</span>`;
-                
+                const portrait = mobImgSrc ? `<img src="${mobImgSrc}" class="mob-portrait" alt="${m.name}" loading="lazy">` : `<span class="mob-portrait-emoji">${emoji}</span>`;
+
                 return `<div class="mob-card-compact ${threatClass}" id="mob-${m.id}">
                     <div class="mob-portrait-wrap">${portrait}</div>
                     <div class="mob-info-compact">
                         <div class="mob-name-row"><span class="mob-name">${m.name}</span>${elem}</div>
-                        <div class="mob-stat-row">❤️${m.hp} ⚔️${m.atk} 🛡️${m.def}</div>
-                        <div class="mob-reward-row">⭐${m.xp_reward} 💰${m.gold_reward} ${drops}</div>
-                        <div class="mob-threat-row"><span class="threat-badge ${threatClass}">${threatLevel}</span> ~${winChance}%</div>
+                        <div class="mob-stat-row"><span>❤️ ${m.hp}</span> <span>⚔️ ${m.atk}</span> <span>🛡️ ${m.def}</span></div>
+                        <div class="mob-reward-row"><span>⭐ <span class="reward-label">XP</span> ${m.xp_reward}</span> <span>💰 <span class="reward-label">${m.gold_reward}g</span></span> ${drops}</div>
+                        <div class="mob-threat-row"><span class="threat-badge ${threatClass}">${threatLevel}</span> <span class="win-chance">~${winChance}% win</span></div>
                     </div>
                     <div class="mob-btn-row">
-                        <button class="btn btn-attack-compact" onclick="attackMob('${m.id}', '${m.name}', ${m.hp})">⚔️</button>
+                        <button class="btn btn-attack-compact" onclick="attackMob('${m.id}', '${m.name}', ${m.hp})">⚔️ Attack</button>
                     </div>
                 </div>`;
             }).join('');
