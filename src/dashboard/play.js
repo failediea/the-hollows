@@ -1244,7 +1244,7 @@ async function doAction(action, target, params) {
     if (!state.apiKey) return;
 
     // Disable action buttons briefly
-    document.querySelectorAll('.btn-action').forEach(b => b.disabled = true);
+    document.querySelectorAll('.btn-action, .btn-rest').forEach(b => b.disabled = true);
 
     try {
         const body = { action };
@@ -1276,6 +1276,9 @@ async function doAction(action, target, params) {
             if (action === 'gather' && data.data?.cooldownRemaining && params?.target) {
                 startGatherCooldown(params.target, data.data.cooldownRemaining);
             }
+            if (action === 'rest' && data.data?.cooldownRemaining) {
+                startRestCooldown(data.data.cooldownRemaining);
+            }
             await refreshAgent();
             return;
         }
@@ -1295,6 +1298,9 @@ async function doAction(action, target, params) {
             showGatherResult(data);
         } else {
             showMessage(data.message || 'Action completed', 'success');
+            if (action === 'rest' && data.success !== false) {
+                startRestCooldown(300);
+            }
         }
 
         await refreshAgent();
@@ -1305,7 +1311,7 @@ async function doAction(action, target, params) {
     } catch (e) {
         showMessage(e.message || 'Action failed', 'error');
     } finally {
-        document.querySelectorAll('.btn-action').forEach(b => b.disabled = false);
+        document.querySelectorAll('.btn-action, .btn-rest').forEach(b => b.disabled = false);
     }
 }
 
@@ -1324,6 +1330,54 @@ async function buyItem(code) {
 
 async function sellItem(code) {
     await doAction('sell', null, { itemCode: code, quantity: 1 });
+}
+
+// ============ REST COOLDOWN ============
+let restCooldownInterval = null;
+function startRestCooldown(seconds) {
+    const btn = document.getElementById('restBtn');
+    const bar = document.getElementById('restCooldownBar');
+    if (!btn) return;
+
+    if (restCooldownInterval) clearInterval(restCooldownInterval);
+
+    const endTime = Date.now() + seconds * 1000;
+    const totalDuration = seconds * 1000;
+    btn.disabled = true;
+    btn.classList.add('on-cooldown');
+
+    function tick() {
+        const remaining = Math.max(0, endTime - Date.now());
+        if (remaining <= 0) {
+            clearInterval(restCooldownInterval);
+            restCooldownInterval = null;
+            btn.disabled = false;
+            btn.classList.remove('on-cooldown');
+            btn.textContent = '';
+            btn.append('💤 Rest');
+            const newBar = document.createElement('span');
+            newBar.className = 'cooldown-bar';
+            newBar.id = 'restCooldownBar';
+            newBar.style.width = '0%';
+            btn.appendChild(newBar);
+            return;
+        }
+        const secs = Math.ceil(remaining / 1000);
+        const min = Math.floor(secs / 60);
+        const sec = secs % 60;
+        const pct = Math.round((1 - remaining / totalDuration) * 100);
+        btn.textContent = '';
+        btn.append(`⏳ ${min}:${String(sec).padStart(2, '0')}`);
+        const newBar = document.createElement('span');
+        newBar.className = 'cooldown-bar';
+        newBar.id = 'restCooldownBar';
+        newBar.style.width = pct + '%';
+        btn.appendChild(newBar);
+    }
+
+    restCooldownInterval = setInterval(tick, 1000);
+    tick();
+    if (bar) bar.style.width = '0%';
 }
 
 // ============ CRAFT TAB ============
@@ -1775,6 +1829,15 @@ const SKILL_ABILITY_MAP = {
     silent_step: { name: 'Feint', desc: "Reveal enemy's TRUE next stance", icon: '👁️' },
 };
 
+function buildQuestRewardHtml(rewards) {
+    const pills = [];
+    if (rewards.xp) pills.push(`<span class="quest-reward reward-xp">⭐ +${rewards.xp} XP</span>`);
+    if (rewards.gold) pills.push(`<span class="quest-reward reward-gold">💰 +${rewards.gold}</span>`);
+    if (rewards.skillPoints) pills.push(`<span class="quest-reward reward-sp">🌟 +${rewards.skillPoints} SP</span>`);
+    if (rewards.item) pills.push(`<span class="quest-reward reward-item">🎁 ${rewards.item.quantity}x ${rewards.item.name}</span>`);
+    return pills.join('');
+}
+
 async function renderQuestsTab() {
     const container = document.getElementById('questsContent');
     if (!container) return;
@@ -1797,8 +1860,8 @@ async function renderQuestsTab() {
                     <span>${ZONE_NAMES[zs.zone] || zs.zone}${isCurrent ? ' 📍' : ''}</span>
                     <span style="color:#4ade80">${zs.completed}/${zs.total}</span>
                 </div>
-                <div style="background:rgba(255,255,255,0.1);border-radius:4px;height:6px;overflow:hidden">
-                    <div style="background:linear-gradient(90deg,#4ade80,#22c55e);height:100%;width:${pct}%;transition:width 0.3s"></div>
+                <div class="quest-progress-bar" style="height:6px">
+                    <div class="quest-progress-fill fill-active" style="width:${pct}%;background:linear-gradient(90deg,#4ade80,#22c55e)"></div>
                 </div>
             </div>`;
         }
@@ -1820,33 +1883,26 @@ async function renderQuestsTab() {
                 statusIcon = '🔒'; statusClass = 'quest-locked'; statusBorder = 'rgba(255,255,255,0.1)';
             }
 
-            // Rewards display
-            const rewards = [];
-            if (q.rewards.xp) rewards.push(`+${q.rewards.xp} XP`);
-            if (q.rewards.gold) rewards.push(`+${q.rewards.gold} 💰`);
-            if (q.rewards.skillPoints) rewards.push(`+${q.rewards.skillPoints} 🌟 SP`);
-            if (q.rewards.item) rewards.push(`${q.rewards.item.quantity}x ${q.rewards.item.name}`);
-
-            html += `<div class="quest-card ${statusClass}" style="border-left:3px solid ${statusBorder};padding:10px 12px;margin-bottom:8px;background:rgba(255,255,255,0.03);border-radius:4px">
-                <div style="display:flex;justify-content:space-between;align-items:center">
-                    <span style="font-family:var(--font-header);font-size:14px;color:var(--bone-white)">${statusIcon} ${q.name}</span>
-                    <span style="font-size:11px;color:#888">#${q.order}</span>
+            html += `<div class="quest-card ${statusClass}">
+                <div class="quest-header">
+                    <span class="quest-title"><span class="quest-icon">${statusIcon}</span> ${q.name}</span>
+                    <span class="quest-order">#${q.order}</span>
                 </div>
-                <div style="color:#aaa;font-size:12px;margin:4px 0">${q.description}</div>
+                <div class="quest-desc">${q.description}</div>
                 ${q.unlocked && !q.claimed ? `
-                    <div style="margin:6px 0">
-                        <div style="display:flex;justify-content:space-between;font-size:11px;color:#888;margin-bottom:2px">
+                    <div class="quest-progress">
+                        <div class="quest-progress-labels">
                             <span>${q.objective.targetName}: ${q.progress}/${q.objective.amount}</span>
                             <span>${pct}%</span>
                         </div>
-                        <div style="background:rgba(255,255,255,0.1);border-radius:4px;height:8px;overflow:hidden">
-                            <div style="background:${q.completed ? '#fbbf24' : 'var(--ember-orange)'};height:100%;width:${pct}%;transition:width 0.3s"></div>
+                        <div class="quest-progress-bar">
+                            <div class="quest-progress-fill ${q.completed ? 'fill-claimable' : 'fill-active'}" style="width:${pct}%"></div>
                         </div>
                     </div>
                 ` : ''}
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
-                    <span style="font-size:11px;color:#4ade80">${rewards.join(' · ')}</span>
-                    ${q.completed && !q.claimed ? `<button class="btn-shop" style="background:#fbbf24;color:#000;font-weight:bold;padding:4px 12px" onclick="claimQuest('${q.id}')">🎁 Claim</button>` : ''}
+                <div class="quest-footer">
+                    <div class="quest-rewards">${buildQuestRewardHtml(q.rewards)}</div>
+                    ${q.completed && !q.claimed ? `<button class="btn-claim" onclick="claimQuest('${q.id}')">🎁 Claim</button>` : ''}
                 </div>
             </div>`;
         }
@@ -1889,7 +1945,7 @@ async function refreshActiveQuest() {
             const allClaimed = data.quests.every(q => q.claimed);
             if (allClaimed) {
                 section.style.display = '';
-                container.innerHTML = `<div style="padding:8px 12px;background:rgba(74,222,128,0.08);border-radius:6px;border-left:3px solid #4ade80;color:#4ade80;font-size:13px">✅ All quests completed in this zone!</div>`;
+                container.innerHTML = `<div class="quest-card quest-done" style="opacity:1;color:#4ade80;font-size:13px">✅ All quests completed in this zone!</div>`;
             } else {
                 section.style.display = 'none';
             }
@@ -1900,31 +1956,25 @@ async function refreshActiveQuest() {
         const pct = active.objective.amount > 0 ? Math.round(active.progress / active.objective.amount * 100) : 0;
         const claimable = active.completed && !active.claimed;
 
-        const rewards = [];
-        if (active.rewards.xp) rewards.push(`+${active.rewards.xp} XP`);
-        if (active.rewards.gold) rewards.push(`+${active.rewards.gold} gold`);
-        if (active.rewards.skillPoints) rewards.push(`+${active.rewards.skillPoints} SP`);
-        if (active.rewards.item) rewards.push(`${active.rewards.item.quantity}x ${active.rewards.item.name}`);
-
         container.innerHTML = `
-            <div style="padding:10px 12px;background:rgba(255,255,255,0.03);border-radius:6px;border-left:3px solid ${claimable ? '#fbbf24' : 'var(--ember-orange)'}">
-                <div style="display:flex;justify-content:space-between;align-items:center">
-                    <span style="font-family:var(--font-header);font-size:14px;color:var(--bone-white)">${claimable ? '🎉' : '📜'} ${active.name}</span>
-                    <span style="font-size:11px;color:#888">#${active.order}</span>
+            <div class="quest-card ${claimable ? 'quest-claimable' : 'quest-active'}">
+                <div class="quest-header">
+                    <span class="quest-title"><span class="quest-icon">${claimable ? '🎉' : '📜'}</span> ${active.name}</span>
+                    <span class="quest-order">#${active.order}</span>
                 </div>
-                <div style="color:#aaa;font-size:12px;margin:4px 0">${active.description}</div>
-                <div style="margin:6px 0">
-                    <div style="display:flex;justify-content:space-between;font-size:11px;color:#888;margin-bottom:2px">
+                <div class="quest-desc">${active.description}</div>
+                <div class="quest-progress">
+                    <div class="quest-progress-labels">
                         <span>${active.objective.targetName}: ${active.progress}/${active.objective.amount}</span>
                         <span>${pct}%</span>
                     </div>
-                    <div style="background:rgba(255,255,255,0.1);border-radius:4px;height:8px;overflow:hidden">
-                        <div style="background:${claimable ? '#fbbf24' : 'var(--ember-orange)'};height:100%;width:${pct}%;transition:width 0.3s"></div>
+                    <div class="quest-progress-bar">
+                        <div class="quest-progress-fill ${claimable ? 'fill-claimable' : 'fill-active'}" style="width:${pct}%"></div>
                     </div>
                 </div>
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
-                    <span style="font-size:11px;color:#4ade80">${rewards.join(' · ')}</span>
-                    ${claimable ? `<button class="btn-shop" style="background:#fbbf24;color:#000;font-weight:bold;padding:4px 12px" onclick="claimQuest('${active.id}')">🎁 Claim</button>` : ''}
+                <div class="quest-footer">
+                    <div class="quest-rewards">${buildQuestRewardHtml(active.rewards)}</div>
+                    ${claimable ? `<button class="btn-claim" onclick="claimQuest('${active.id}')">🎁 Claim</button>` : ''}
                 </div>
             </div>`;
     } catch (e) {
