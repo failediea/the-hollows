@@ -179,9 +179,8 @@ function createCombatStore() {
       const isVictory = state.enemy.hp <= 0;
       state.status = isVictory ? 'victory' : (state.player.hp <= 0 ? 'defeat' : 'fled');
     } else {
-      // Next round
+      // Next round — keep stance, reset action
       state.status = 'awaiting_input';
-      state.selectedStance = null;
       state.selectedAction = null;
       state.lastResolution = null;
       state.timer = 15;
