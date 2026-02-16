@@ -122,7 +122,7 @@
                             <p>Don't want to click through the dungeon yourself? Build an autonomous AI agent that plays for you. Connect via WebSocket, make decisions with LLMs, and let your bot grind the depths.</p>
                         </div>
                     </div>
-                    <a href="https://github.com/failediea/the-hollows" target="_blank" rel="noopener" class="btn btn-agent-link">View Agent Docs on GitHub</a>
+                    <a href="https://github.com/failediea/the-hollows/blob/main/AGENT.md" target="_blank" rel="noopener" class="btn btn-agent-link">View Agent Docs on GitHub</a>
                 </div>
 
                 <!-- Login Box -->
@@ -130,7 +130,7 @@
                     <div class="login-box">
                         <h2 class="login-box-title">Enter The Hollows</h2>
                         <div class="login-form">
-                            <div class="form-group">
+                            <div class="form-group" style="display:none">
                                 <label>Name your champion</label>
                                 <input type="text" id="nameInput" placeholder="Enter a name..." autocomplete="off" maxlength="20">
                             </div>
@@ -181,10 +181,8 @@
                     <button class="tab-btn" data-tab="guild" onclick="switchTab('guild')">👥 Guild</button>
                     <button class="tab-btn" data-tab="boss" onclick="switchTab('boss')">🔥 Ashborn</button>
                     <button class="tab-btn" data-tab="pvp" onclick="switchTab('pvp')">⚔️ PvP</button>
-                    <button class="tab-btn" data-tab="craft" onclick="switchTab('craft'); renderCraftTab()">🔨 Craft</button>
                     <button class="tab-btn" data-tab="market" onclick="switchTab('market'); renderMarketTab()">🏪 Market</button>
                     <button class="tab-btn" data-tab="skills" onclick="switchTab('skills'); renderSkillsTab()">🌟 Skills</button>
-                    <button class="tab-btn" data-tab="quests" onclick="switchTab('quests'); renderQuestsTab()">📜 Quests</button>
                     <button class="tab-btn" data-tab="chain" onclick="switchTab('chain')">⛓️ Chain</button>
                     <button class="tab-btn" data-tab="leaderboard" onclick="switchTab('leaderboard')">🏆 Ranks</button>
                 </div>

@@ -187,6 +187,9 @@ async function connectWallet() {
             console.warn('Returning player check failed:', checkErr);
         }
 
+        // New player — show name input
+        document.querySelector('.form-group').style.display = '';
+
     } catch (e) {
         err.textContent = e.message || 'Failed to connect wallet';
     }
@@ -1163,8 +1166,6 @@ function renderChain() {
             <ul style="font-size:12px;color:var(--starsilver-silver);list-style:none;line-height:2">
                 <li>✅ 10 MON entry fee</li>
                 <li>⏳ Season prize pool distribution</li>
-                <li>⏳ NFT loot drops for legendary items</li>
-                <li>⏳ Cross-season prestige tracking</li>
             </ul>
         </div>
     `;

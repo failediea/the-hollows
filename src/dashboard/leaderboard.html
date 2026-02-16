@@ -155,7 +155,7 @@ async function loadSeason() {
         document.getElementById('seasonBanner').innerHTML = `
             <div style="display:flex;justify-content:space-between;width:100%;flex-wrap:wrap;gap:4px;">
                 <span class="season-label">🏰 Season ${s.id}</span>
-                <span class="prize">💰 ${(s.prizePool || 0).toLocaleString()} SOL Prize Pool</span>
+                <span class="prize">💰 ${(s.prizePool || 0).toLocaleString()} MON Prize Pool</span>
                 <span class="days">⏳ ${s.progress.daysRemaining} days remaining (Day ${s.progress.dayNumber})</span>
             </div>
             <div class="progress-bar" style="width:100%;margin-top:8px;"><div class="progress-fill" style="width:${s.progress.percentComplete}%"></div></div>
