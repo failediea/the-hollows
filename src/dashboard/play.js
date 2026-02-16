@@ -462,7 +462,7 @@ function renderCharPanel() {
     if (spEl) {
         const sp = a.skillPoints || 0;
         spEl.innerHTML = sp > 0
-            ? `<span class="gold-icon">🌟</span><span class="gold-amount" style="color:#fbbf24">${sp}</span><span class="gold-label">Skill Points</span>`
+            ? `<span class="gold-amount" style="color:#fbbf24">${sp}</span><span class="gold-label">Skill Points</span>`
             : '';
     }
 
@@ -473,7 +473,7 @@ function renderCharPanel() {
     } else if (a.status === 'corrupted') {
         statusEl.innerHTML = '<span style="color:var(--corruption-purple)">😈 CORRUPTED — Stats reduced 20%</span>';
     } else {
-        statusEl.innerHTML = '<span style="color:var(--danger-safe)">✨ Alive</span>';
+        statusEl.innerHTML = '';
     }
 
     // Top zone
