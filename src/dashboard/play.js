@@ -427,9 +427,6 @@ function renderCharPanel() {
     document.getElementById('xpBar').style.width = xpPct + '%';
     document.getElementById('xpText').textContent = `${xpInLevel} / ${xpNeeded}`;
 
-    // Gold
-    document.getElementById('charGold').textContent = (a.gold || 0).toLocaleString();
-
     // Corruption
     const corrPct = Math.min(a.corruption, 100);
     document.getElementById('corruptionBar').style.width = corrPct + '%';
@@ -821,8 +818,9 @@ function renderZoneDetails() {
                             <p class="mob-lore">${m.description || ''}</p>
                         </div>
                     </div>
-                    <div class="mob-btn-row">
-                        <button class="btn btn-attack-compact" onclick="attackMob('${m.id}', '${m.name}', ${m.hp})">⚔️ Attack</button>
+                    <div class="mob-btn-row" style="display:flex;gap:6px;">
+                        <button class="btn btn-attack-compact" style="flex:3;" onclick="attackMob('${m.id}', '${m.name}', ${m.hp})">⚔️ Attack</button>
+                        ${m.location ? `<button class="btn btn-dungeon-compact${(pa.hp || 60) < (pa.max_hp || 60) * 0.3 ? ' btn-dimmed' : ''}" style="flex:2;" onclick="enterDungeon('${m.id}', '${m.name}')" title="Enter dungeon — fight 3-6 ${m.name}s for bonus loot. HP carries between fights.">⬇ Dungeon</button>` : ''}
                     </div>
                 </div>`;
             }).join('');
@@ -1357,6 +1355,12 @@ async function doAction(action, target, params) {
             return;
         }
 
+        // Handle dungeon entry
+        if (action === 'dungeon' && data.data && data.data.dungeon) {
+            showDungeonCrawler(data.data);
+            return;
+        }
+
         // Handle combat results
         if ((action === 'attack' || action === 'attack_ashborn') && data.data) {
             // Check for realtime combat first, then tactical, then legacy
@@ -1392,6 +1396,11 @@ async function doAction(action, target, params) {
 async function attackMob(mobId, mobName, mobHp) {
     showMessage(`Attacking ${mobName}...`, 'info');
     await doAction('attack', null, { target: mobId });
+}
+
+async function enterDungeon(mobId, mobName) {
+    showMessage(`Descending into the dungeon...`, 'info');
+    await doAction('dungeon', null, { target: mobId });
 }
 
 async function moveToZone(zoneId) {
@@ -4397,5 +4406,74 @@ function closeRealtimeCombat() {
     const overlay = document.getElementById('realtimeCombatOverlay');
     if (overlay) overlay.remove();
     window.removeEventListener('message', handleRealtimeCombatMessage);
+}
+
+// ============ DUNGEON CRAWLER ============
+
+function showDungeonCrawler(dungeonData) {
+    // Remove any existing overlays
+    const oldOverlay = document.getElementById('combatOverlay');
+    if (oldOverlay) oldOverlay.classList.add('hidden');
+    const tacticalOverlay = document.getElementById('tacticalCombatOverlay');
+    if (tacticalOverlay) tacticalOverlay.remove();
+    let overlay = document.getElementById('dungeonCrawlerOverlay');
+    if (overlay) overlay.remove();
+
+    // Create fullscreen overlay with iframe
+    overlay = document.createElement('div');
+    overlay.id = 'dungeonCrawlerOverlay';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:10000;background:#0a0a0f;';
+
+    const { dungeonId, location: locationName, description, zone, mobName } = dungeonData;
+    const apiKey = state.apiKey || '';
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${wsProtocol}//${window.location.host}/ws/dungeon?sessionId=${dungeonId}&apiKey=${apiKey}`;
+    const params = new URLSearchParams({
+        mode: 'dungeon',
+        dungeonId,
+        apiKey,
+        wsUrl,
+        zone: zone || '',
+        locationName: locationName || '',
+        locationDescription: description || '',
+        mobName: mobName || '',
+    });
+
+    const iframe = document.createElement('iframe');
+    iframe.src = `/combat?${params.toString()}`;
+    iframe.style.cssText = 'width:100%;height:100%;border:none;';
+    iframe.id = 'dungeonCrawlerIframe';
+    overlay.appendChild(iframe);
+
+    document.body.appendChild(overlay);
+
+    // Listen for messages from iframe
+    window.addEventListener('message', handleDungeonMessage);
+}
+
+function handleDungeonMessage(event) {
+    if (!event.data) return;
+
+    if (event.data.type === 'dungeon-end') {
+        closeDungeonCrawler();
+        const rewards = event.data.rewards;
+        if (rewards) {
+            const items = rewards.items?.length ? `, ${rewards.items.length} item${rewards.items.length > 1 ? 's' : ''}` : '';
+            showMessage(`Returned from the dungeon. +${rewards.xp || 0} XP, +${rewards.gold || 0}g${items} earned.`, 'success');
+        } else if (event.data.result === 'dead') {
+            showMessage('You fell in the dungeon...', 'error');
+        } else {
+            showMessage('Escaped the dungeon.', 'info');
+        }
+        refreshAgent();
+        refreshWorld();
+        refreshActivity();
+    }
+}
+
+function closeDungeonCrawler() {
+    const overlay = document.getElementById('dungeonCrawlerOverlay');
+    if (overlay) overlay.remove();
+    window.removeEventListener('message', handleDungeonMessage);
 }
 
