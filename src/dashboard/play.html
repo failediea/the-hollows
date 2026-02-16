@@ -202,6 +202,17 @@
                     <span id="charLevel" class="char-level"></span>
                 </div>
 
+                <!-- Rest -->
+                <div class="rest-card">
+                    <button class="btn btn-rest" id="restBtn" onclick="doAction('rest')">
+                        💤 Rest
+                        <span class="cooldown-bar" id="restCooldownBar" style="width:0%"></span>
+                    </button>
+                    <div class="rest-card-body">
+                        <span class="rest-info">Heals <strong>100% HP</strong> · 5 min cooldown</span>
+                    </div>
+                </div>
+
                 <!-- HP Bar -->
                 <div class="stat-bar-group">
                     <label>❤️ HP</label>
@@ -229,28 +240,12 @@
                     </div>
                 </div>
 
-                <!-- Gold -->
-                <div class="gold-display">
-                    <span class="gold-amount" id="charGold">0</span><span class="gold-label">💰 Gold</span>
-                </div>
-
                 <!-- Stats Grid -->
                 <div class="stats-grid">
                     <div class="stat-item"><span class="stat-icon">⚔️</span><span class="stat-label">ATK</span><span class="stat-value" id="statAtk">0</span></div>
                     <div class="stat-item"><span class="stat-icon">🛡️</span><span class="stat-label">DEF</span><span class="stat-value" id="statDef">0</span></div>
                     <div class="stat-item"><span class="stat-icon">💨</span><span class="stat-label">SPD</span><span class="stat-value" id="statSpd">0</span></div>
                     <div class="stat-item"><span class="stat-icon">🍀</span><span class="stat-label">LUCK</span><span class="stat-value" id="statLuck">0</span></div>
-                </div>
-
-                <!-- Rest -->
-                <div class="rest-card">
-                    <button class="btn btn-rest" id="restBtn" onclick="doAction('rest')">
-                        💤 Rest
-                        <span class="cooldown-bar" id="restCooldownBar" style="width:0%"></span>
-                    </button>
-                    <div class="rest-card-body">
-                        <span class="rest-info">Heals <strong>100% HP</strong> · 5 min cooldown</span>
-                    </div>
                 </div>
 
                 <!-- Status -->
