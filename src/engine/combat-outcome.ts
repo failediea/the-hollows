@@ -108,7 +108,7 @@ function processVictory(
     xpCapped = true;
   }
 
-  // Generate loot via Treasure Class system
+  // Generate loot from mob drop_table
   const isBoss = updatedSession.encounterType === 'gate_boss' || updatedSession.encounterType === 'world_boss';
   const lootDrops = generateLoot(
     db,
