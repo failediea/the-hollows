@@ -2845,21 +2845,6 @@ body {
 
 /* Agent Section */
 .agent-section { gap: 12px; }
-.btn-agent-link {
-    display: inline-flex; align-items: center; justify-content: center;
-    padding: 12px 24px; border-radius: 8px;
-    font-family: var(--font-header); font-size: 13px; font-weight: 600;
-    color: #e9d5ff; text-decoration: none; text-transform: uppercase; letter-spacing: 1px;
-    background: rgba(138,43,226,0.2);
-    border: 1px solid rgba(192,132,252,0.5);
-    transition: all 0.3s;
-    width: fit-content;
-}
-.btn-agent-link:hover {
-    background: rgba(138,43,226,0.2);
-    box-shadow: 0 0 20px rgba(138,43,226,0.25);
-    transform: translateY(-2px);
-}
 
 /* Login Box — Single Column Flow */
 .landing-login {

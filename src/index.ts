@@ -138,6 +138,12 @@ app.get('/play/play.js', (c) => {
   return c.body(js);
 });
 
+// Agent setup docs page
+app.get('/agentsetup', (c) => {
+  const html = fs.readFileSync(path.join(dashboardDir, 'agentsetup.html'), 'utf-8');
+  return c.html(html);
+});
+
 // Leaderboard page
 app.get('/leaderboard', (c) => {
   const html = fs.readFileSync(path.join(dashboardDir, 'leaderboard.html'), 'utf-8');
