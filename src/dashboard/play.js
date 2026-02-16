@@ -2730,43 +2730,6 @@ function showStanceReveal(selector, stance) {
     setTimeout(() => reveal.remove(), 1500);
 }
 
-// Phase 2A: Enemy damage preview
-function getEnemyDamagePreview() {
-    if (!activeCombat) return '';
-    const enemy = activeCombat.enemy;
-    const enemyAtk = enemy.atk || enemy.attack || 0;
-    if (!enemyAtk) return '';
-    const intent = activeCombat.intent;
-    const stanceMod = intent?.stanceHint === 'aggressive' ? 1.3 : intent?.stanceHint === 'defensive' ? 0.7 : 1.0;
-    const playerDef = (state.agent?.def || 5) + (state.agent?.equipBonuses?.def || 0);
-    const defMod = selectedStance === 'defensive' ? 1.4 : selectedStance === 'evasive' ? 0.9 : selectedStance === 'aggressive' ? 0.8 : 1.0;
-    const effDef = playerDef * defMod * 0.85;
-    const raw = enemyAtk * stanceMod;
-    const minDmg = Math.max(1, Math.floor((raw * 0.9) - effDef));
-    const maxDmg = Math.max(1, Math.floor(raw * 1.1));
-    return '~' + minDmg + '-' + maxDmg + ' incoming';
-}
-
-// Phase 2B: Combo notification
-function showComboNotification(combo) {
-    if (!combo) return;
-    const div = document.createElement('div');
-    div.className = 'combo-notification';
-    const iconEl = document.createElement('div');
-    iconEl.className = 'combo-icon';
-    iconEl.textContent = combo.icon;
-    const nameEl = document.createElement('div');
-    nameEl.className = 'combo-name';
-    nameEl.textContent = combo.name;
-    const descEl = document.createElement('div');
-    descEl.className = 'combo-desc';
-    descEl.textContent = combo.description;
-    div.appendChild(iconEl);
-    div.appendChild(nameEl);
-    div.appendChild(descEl);
-    document.body.appendChild(div);
-    setTimeout(() => div.remove(), 3000);
-}
 
 // ============ Phase 1F: Procedural Web Audio Engine ============
 const combatAudio = {
@@ -3122,8 +3085,6 @@ function renderTacticalCombatUI() {
                         <div class="hp-text">${enemy.hp} / ${enemy.maxHp} HP</div>
                     </div>
                     <div class="status-effects-row" id="enemyStatusEffects">${renderStatusEffects(enemy.buffs || [], enemy.debuffs || [])}</div>
-                    ${activeCombat.intent ? '<div class="enemy-intent">' + (activeCombat.intent.flavorText || 'The enemy watches...') + '</div>' : ''}
-                    <div class="enemy-dmg-preview" id="enemyDmgPreview">${getEnemyDamagePreview()}</div>
                 </div>
             </div>
             
@@ -3201,23 +3162,17 @@ function renderTacticalCombatUI() {
 
 function renderAbilityButtons(abilities, currentStamina) {
     if (!abilities || abilities.length === 0) return '';
-    const OVEREXERTION_MAX = 2;
 
     return abilities.map(ability => {
         const canAfford = currentStamina >= ability.staminaCost;
-        const canOverexert = !canAfford && ability.cooldown === 0 && (currentStamina + OVEREXERTION_MAX) >= ability.staminaCost;
-        const canUse = (canAfford || canOverexert) && ability.cooldown === 0;
+        const canUse = canAfford && ability.cooldown === 0;
         const disabled = !canUse ? 'disabled' : '';
         const cooldownText = ability.cooldown > 0 ? 'CD: ' + ability.cooldown : ability.staminaCost + ' STA';
-        const overexertClass = canOverexert ? ' overexert' : '';
-        const deficit = canOverexert ? ability.staminaCost - currentStamina : 0;
-        const overexertWarning = canOverexert ? '<span class="overexert-warning">OVEREXERT: -' + (deficit * 5) + '% HP</span>' : '';
 
-        return '<button class="action-btn ability-btn' + overexertClass + ' ' + disabled + '" onclick="selectAction(\'ability\', \'' + ability.id + '\')" ' + disabled + '>'
+        return '<button class="action-btn ability-btn ' + disabled + '" onclick="selectAction(\'ability\', \'' + ability.id + '\')" ' + disabled + '>'
             + '<span class="action-icon">\uD83D\uDCA5</span>'
             + '<span class="action-name">' + ability.name + '</span>'
             + '<span class="action-cost">' + cooldownText + '</span>'
-            + overexertWarning
             + (ability.cooldown > 0 ? '<span class="cooldown-overlay"></span>' : '')
             + '</button>';
     }).join('');
@@ -3248,10 +3203,6 @@ function selectStance(stance) {
         btn.classList.remove('selected');
     });
     document.querySelector('[data-stance="' + stance + '"]')?.classList.add('selected');
-
-    // Update enemy damage preview when stance changes
-    const edmPreview = document.getElementById('enemyDmgPreview');
-    if (edmPreview) edmPreview.textContent = getEnemyDamagePreview();
 
     updateConfirmButton();
 }
@@ -3484,12 +3435,7 @@ async function animateRoundResolution(data) {
     // 1. Show round log entry (immediate)
     showRoundResolution(data);
 
-    // 2. Show combo notification if triggered
-    if (data.activeCombo) {
-        showComboNotification(data.activeCombo);
-    }
-
-    // 3. Stance reveal — show enemy stance briefly
+    // 2. Stance reveal — show enemy stance briefly
     await delay(200);
     showStanceReveal('.tactical-enemy', resolution.enemyStance);
     await delay(400);
@@ -3677,8 +3623,6 @@ async function animateRoundResolution(data) {
             })()
         };
         activeCombat.enemy = { ...activeCombat.enemy, ...data.state.enemy };
-        // Preserve intent and combo data
-        if (data.intent) activeCombat.intent = data.intent;
         selectedStance = null;
         selectedAction = null;
         combatTimer = 15;
