@@ -1,4 +1,4 @@
-import type { Stance, ElementType, EnemyArchetype, Rewards } from './types';
+import type { Stance, ElementType, EnemyArchetype, Rewards, PlayerClass } from './types';
 
 export interface RealtimePlayerState {
   x: number;
@@ -12,6 +12,17 @@ export interface RealtimePlayerState {
   buffs: any[];
   debuffs: any[];
   attackCooldown: number;
+  playerClass?: PlayerClass;
+  abilityCooldowns?: Record<string, number>;
+}
+
+export interface RealtimeProjectile {
+  id: string;
+  x: number;
+  y: number;
+  element: ElementType;
+  visual: string;
+  size?: number;
 }
 
 export interface RealtimeEnemyState {
@@ -66,11 +77,13 @@ interface RealtimeState {
   player: RealtimePlayerState | null;
   enemies: RealtimeEnemyState[];
   resources: RealtimeResourceState[];
+  projectiles: RealtimeProjectile[];
   arena: ArenaData | null;
   events: RealtimeEvent[];
   rewards: Rewards | null;
   tick: number;
   zone: string;
+  playerClass: PlayerClass | null;
 }
 
 function createRealtimeStore() {
@@ -81,14 +94,17 @@ function createRealtimeStore() {
     player: null,
     enemies: [],
     resources: [],
+    projectiles: [],
     arena: null,
     events: [],
     rewards: null,
     tick: 0,
     zone: '',
+    playerClass: null,
   });
 
   let ws: WebSocket | null = null;
+  let demoSession: any = null;
   let subscribers: Array<(state: RealtimeState) => void> = [];
 
   function notifySubscribers() {
@@ -146,6 +162,7 @@ function createRealtimeStore() {
         state.player = msg.data.player;
         state.enemies = msg.data.enemies;
         if (msg.data.resources) state.resources = msg.data.resources;
+        if (msg.data.projectiles) state.projectiles = msg.data.projectiles;
         if (msg.data.arena) state.arena = msg.data.arena;
         if (msg.data.zone) state.zone = msg.data.zone;
         state.tick = msg.data.tick;
@@ -170,7 +187,12 @@ function createRealtimeStore() {
     abilitySlot: number | null;
     stanceChange: Stance | null;
     gather?: boolean;
+    targetId?: string;
   }) {
+    if (demoSession) {
+      demoSession.receiveInput(input);
+      return;
+    }
     if (ws && ws.readyState === WebSocket.OPEN) {
       ws.send(JSON.stringify({ type: 'input', data: input }));
     }
@@ -182,7 +204,54 @@ function createRealtimeStore() {
     return events;
   }
 
+  async function connectDemo(zone = 'tomb_halls', playerClass?: PlayerClass) {
+    state.sessionId = 'demo';
+    state.status = 'connecting';
+    if (playerClass) state.playerClass = playerClass;
+
+    const { DemoSession } = await import('../three/DemoSession');
+
+    demoSession = new DemoSession({
+      onStateUpdate: (data: any) => {
+        state.player = data.player;
+        state.enemies = data.enemies;
+        state.resources = data.resources;
+        if (data.projectiles) state.projectiles = data.projectiles;
+        if (data.arena) state.arena = data.arena;
+        if (data.zone) state.zone = data.zone;
+        state.tick = data.tick;
+        notifySubscribers();
+      },
+      onEvent: (event: any) => {
+        state.events = [...state.events, event];
+        notifySubscribers();
+      },
+      onEnd: (result: 'victory' | 'defeat') => {
+        state.status = result;
+        if (result === 'victory') {
+          state.rewards = {
+            xpGained: 150,
+            goldGained: 45,
+            itemsDropped: ['Tomb Shard'],
+            xpCapped: false,
+          };
+        }
+        notifySubscribers();
+      },
+    }, zone, playerClass);
+
+    state.connected = true;
+    state.status = 'active';
+    notifySubscribers();
+
+    demoSession.start();
+  }
+
   function disconnect() {
+    if (demoSession) {
+      demoSession.stop();
+      demoSession = null;
+    }
     if (ws) {
       ws.close();
       ws = null;
@@ -203,6 +272,7 @@ function createRealtimeStore() {
     get state() { return state; },
     subscribe,
     connect,
+    connectDemo,
     sendInput,
     consumeEvents,
     disconnect,

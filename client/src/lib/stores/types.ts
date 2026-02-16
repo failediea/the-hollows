@@ -4,6 +4,47 @@ export type EnemyArchetype = 'brute' | 'guardian' | 'assassin' | 'caster' | 'bos
 export type EncounterType = 'mob' | 'gate_boss' | 'world_boss';
 export type CombatStatus = 'loading' | 'awaiting_input' | 'resolving' | 'animating' | 'victory' | 'defeat' | 'fled';
 
+export type PlayerClass = 'sentinel' | 'reaver' | 'shade' | 'warden' | 'corsair' | 'pyromancer' | 'void_weaver';
+
+export type AbilitySlotType = 'primary' | 'q' | 'e' | 'r';
+export type AbilityVisual = 'melee_instant' | 'projectile' | 'self_aoe' | 'targeted_aoe' | 'self_buff' | 'drain';
+export type MeshType = 'heavy_armor' | 'dual_wield' | 'slim_rogue' | 'ranger' | 'gunslinger' | 'fire_mage' | 'void_mage';
+
+export interface ClassAbilityDef {
+  id: string;
+  name: string;
+  slot: AbilitySlotType;
+  cooldownTicks: number;
+  staminaCost: number;
+  range: number;
+  damage: number;
+  projectileSpeed: number;
+  aoeRadius: number;
+  element: ElementType;
+  visual: AbilityVisual;
+  duration?: number;       // buff/debuff duration in ticks
+  dotDamage?: number;      // damage per tick for DoTs
+  dotDuration?: number;    // DoT tick count
+  buffEffect?: string;     // e.g. 'attack_speed', 'damage_reduction', 'reflect', 'taunt', 'stealth'
+  buffValue?: number;      // multiplier or flat value
+  healPercent?: number;    // for life drain
+  piercing?: boolean;      // passes through enemies
+  projectileCount?: number; // for fan abilities
+}
+
+export interface ClassDef {
+  id: PlayerClass;
+  name: string;
+  role: string;
+  description: string;
+  hp: number;
+  stamina: number;
+  attackRange: number;
+  abilities: ClassAbilityDef[];
+  color: string;
+  meshType: MeshType;
+}
+
 export interface CombatAction {
   type: 'basic_attack' | 'ability' | 'consumable' | 'guard' | 'flee';
   abilityId?: string;

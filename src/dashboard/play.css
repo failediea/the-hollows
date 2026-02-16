@@ -1295,6 +1295,29 @@ body {
     border-color: var(--ember-orange);
     box-shadow: 0 0 12px rgba(255,107,53,0.3);
 }
+.btn-3d-compact {
+    width: 100%;
+    padding: 8px 12px;
+    font-size: 13px;
+    font-weight: 700;
+    font-family: var(--font-header);
+    background: rgba(139,92,246,0.15);
+    color: #8b5cf6;
+    border: 1px solid rgba(139,92,246,0.3);
+    border-radius: 6px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.3s;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 4px;
+}
+.btn-3d-compact:hover {
+    background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+    color: #fff;
+    border-color: #8b5cf6;
+    box-shadow: 0 0 12px rgba(139,92,246,0.3);
+}
 
 .mob-title { flex: 1; }
 .mob-name { font-family: var(--font-header); font-size: 13px; color: var(--bone-white); }

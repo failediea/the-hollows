@@ -1,0 +1,368 @@
+import * as THREE from 'three';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+import type { RealtimeEnemyState, RealtimeResourceState } from '../stores/realtimeStore.svelte';
+import { arenaToWorld } from './DungeonBuilder';
+import { createResourceMaterial, getResourceColor } from './materials';
+import { createEnemyMesh } from './CharacterFactory';
+import { AnimationController } from './AnimationSystem';
+import type { EnemyArchetype, ElementType } from '../stores/types';
+
+interface EnemyMesh {
+  group: THREE.Group;
+  label: CSS2DObject;
+  targetPos: THREE.Vector3;
+  currentPos: THREE.Vector3;
+  hp: number;
+  maxHp: number;
+  animation: AnimationController;
+  archetype: EnemyArchetype;
+  aiState: string;
+}
+
+interface ResourceMesh {
+  group: THREE.Group;
+  body: THREE.Mesh;
+  label: CSS2DObject;
+  isGathered: boolean;
+  fadeAlpha: number;
+}
+
+function createEnemyLabelElement(name: string): HTMLDivElement {
+  const labelDiv = document.createElement('div');
+  labelDiv.className = 'enemy-label-3d';
+
+  const nameEl = document.createElement('div');
+  nameEl.className = 'enemy-name';
+  nameEl.textContent = name;
+  labelDiv.appendChild(nameEl);
+
+  const hpBar = document.createElement('div');
+  hpBar.className = 'enemy-hp-bar';
+  const hpFill = document.createElement('div');
+  hpFill.className = 'enemy-hp-fill';
+  hpFill.style.width = '100%';
+  hpBar.appendChild(hpFill);
+  labelDiv.appendChild(hpBar);
+
+  return labelDiv;
+}
+
+export class EntityManager {
+  private scene: THREE.Scene;
+  private enemies: Map<string, EnemyMesh> = new Map();
+  private resources: Map<string, ResourceMesh> = new Map();
+  private css2DRenderer: CSS2DRenderer;
+  private torchRadius: number;
+
+  constructor(scene: THREE.Scene, container: HTMLElement) {
+    this.scene = scene;
+    this.torchRadius = 26; // Same as light distance
+
+    // CSS2D renderer for floating labels
+    this.css2DRenderer = new CSS2DRenderer();
+    this.css2DRenderer.setSize(container.clientWidth, container.clientHeight);
+    this.css2DRenderer.domElement.style.position = 'absolute';
+    this.css2DRenderer.domElement.style.top = '0';
+    this.css2DRenderer.domElement.style.left = '0';
+    this.css2DRenderer.domElement.style.pointerEvents = 'none';
+    container.appendChild(this.css2DRenderer.domElement);
+  }
+
+  updateEnemies(enemyStates: RealtimeEnemyState[], playerWorldPos: THREE.Vector3) {
+    const activeIds = new Set<string>();
+
+    for (const state of enemyStates) {
+      activeIds.add(state.id);
+      const world = arenaToWorld(state.x, state.y);
+
+      let enemy = this.enemies.get(state.id);
+      if (!enemy) {
+        enemy = this.createEnemy(state);
+        this.enemies.set(state.id, enemy);
+      }
+
+      // Update target position
+      enemy.targetPos.set(world.x, 0, world.z);
+
+      // Detect HP change for hit animation
+      if (state.hp < enemy.hp && enemy.hp > 0) {
+        enemy.animation.play('hit');
+        enemy.animation.flashColor(0xff0000, 0.15);
+      }
+
+      enemy.hp = state.hp;
+      enemy.maxHp = state.maxHp;
+
+      // Detect AI state changes for animations
+      if (state.aiState !== enemy.aiState) {
+        if (state.aiState === 'attack' && enemy.aiState !== 'attack') {
+          // Enemy started attacking
+          const isCaster = state.archetype === 'caster';
+          enemy.animation.play(isCaster ? 'cast' : 'attack_melee');
+        } else if (state.aiState === 'chase' && enemy.aiState !== 'chase') {
+          enemy.animation.play('walk');
+        } else if (state.aiState === 'patrol' && enemy.aiState !== 'patrol') {
+          enemy.animation.play('idle');
+        }
+        enemy.aiState = state.aiState;
+      }
+
+      // Update label
+      this.updateEnemyLabel(enemy, state);
+
+      // Always visible — no fog of war cutoff
+      enemy.group.visible = true;
+    }
+
+    // Remove dead enemies (play death animation briefly, then dispose)
+    for (const [id, enemy] of this.enemies) {
+      if (!activeIds.has(id)) {
+        // Play death animation then remove after delay
+        enemy.animation.play('death');
+        const deathEnemy = enemy;
+        setTimeout(() => {
+          this.disposeEnemy(deathEnemy);
+        }, 800);
+        this.enemies.delete(id);
+      }
+    }
+  }
+
+  updateResources(resourceStates: RealtimeResourceState[], playerWorldPos: THREE.Vector3) {
+    const activeIds = new Set<string>();
+
+    for (const state of resourceStates) {
+      activeIds.add(state.id);
+
+      let resource = this.resources.get(state.id);
+      if (!resource) {
+        resource = this.createResource(state);
+        this.resources.set(state.id, resource);
+      }
+
+      // Handle gathering fade
+      if (state.isGathered && !resource.isGathered) {
+        resource.isGathered = true;
+      }
+
+      // Always visible unless gathered
+      resource.group.visible = !state.isGathered;
+    }
+
+    // Remove resources no longer in state
+    for (const [id, resource] of this.resources) {
+      if (!activeIds.has(id)) {
+        this.disposeResource(resource);
+        this.resources.delete(id);
+      }
+    }
+  }
+
+  // Pre-allocated temp vectors to avoid GC pressure in render loop
+  private _prevPos = new THREE.Vector3();
+  private _dir = new THREE.Vector3();
+
+  // Lerp positions each frame
+  update(dt: number, camera: THREE.PerspectiveCamera) {
+    const lerpFactor = Math.min(1, dt * 20);
+
+    for (const enemy of this.enemies.values()) {
+      // Movement
+      this._prevPos.copy(enemy.currentPos);
+      enemy.currentPos.lerp(enemy.targetPos, lerpFactor);
+      enemy.group.position.copy(enemy.currentPos);
+
+      // Face movement direction (or face camera if stationary)
+      const moveDist = enemy.currentPos.distanceTo(this._prevPos);
+      if (moveDist > 0.01) {
+        this._dir.subVectors(enemy.targetPos, enemy.currentPos);
+        if (this._dir.length() > 0.01) {
+          enemy.group.rotation.y = Math.atan2(this._dir.x, this._dir.z);
+        }
+      }
+
+      // Update move speed for animation
+      const moveSpeed = moveDist / Math.max(dt, 0.001);
+      enemy.animation.setMoveSpeed(Math.min(moveSpeed / 2, 1));
+
+      // Update animation
+      enemy.animation.update(dt);
+    }
+
+    // Animate resources (gentle bob)
+    const time = performance.now() * 0.001;
+    for (const resource of this.resources.values()) {
+      if (resource.isGathered) {
+        resource.fadeAlpha = Math.max(0, resource.fadeAlpha - dt * 2);
+        if (resource.body.material instanceof THREE.MeshStandardMaterial) {
+          resource.body.material.opacity = resource.fadeAlpha;
+        }
+        if (resource.fadeAlpha <= 0) {
+          resource.group.visible = false;
+        }
+      } else {
+        resource.body.position.y = 0.5 + Math.sin(time * 2 + resource.group.id) * 0.1;
+        resource.body.rotation.y += dt * 0.5;
+      }
+    }
+
+    // Render CSS2D labels
+    this.css2DRenderer.render(this.scene, camera);
+  }
+
+  private createEnemy(state: RealtimeEnemyState): EnemyMesh {
+    const world = arenaToWorld(state.x, state.y);
+
+    // Outer wrapper for world positioning — animation never touches this
+    const wrapper = new THREE.Group();
+    wrapper.name = `enemy_wrapper_${state.id}`;
+    wrapper.position.set(world.x, 0, world.z);
+
+    // Inner mesh group — AnimationController owns this (local space only)
+    const inner = createEnemyMesh(
+      state.archetype as EnemyArchetype,
+      state.element as ElementType,
+    );
+    inner.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        child.castShadow = true;
+      }
+    });
+    wrapper.add(inner);
+
+    // Floating label on the wrapper (tracks world position)
+    const labelDiv = createEnemyLabelElement(state.name);
+    const label = new CSS2DObject(labelDiv);
+    label.position.set(0, 2.5, 0);
+    wrapper.add(label);
+
+    this.scene.add(wrapper);
+
+    // Animation controller operates on inner group (local space)
+    const animation = new AnimationController(inner, {
+      type: 'enemy',
+      archetype: state.archetype as EnemyArchetype,
+    });
+    animation.play('idle');
+
+    return {
+      group: wrapper,
+      label,
+      targetPos: new THREE.Vector3(world.x, 0, world.z),
+      currentPos: new THREE.Vector3(world.x, 0, world.z),
+      hp: state.hp,
+      maxHp: state.maxHp,
+      animation,
+      archetype: state.archetype as EnemyArchetype,
+      aiState: state.aiState,
+    };
+  }
+
+  private updateEnemyLabel(enemy: EnemyMesh, state: RealtimeEnemyState) {
+    const fill = enemy.label.element.querySelector('.enemy-hp-fill') as HTMLElement;
+    if (fill) {
+      const pct = Math.max(0, (state.hp / state.maxHp) * 100);
+      fill.style.width = `${pct}%`;
+      fill.style.background = pct > 50 ? '#ff3333' : pct > 25 ? '#ff6600' : '#ff0000';
+    }
+  }
+
+  private createResource(state: RealtimeResourceState): ResourceMesh {
+    const group = new THREE.Group();
+    const world = arenaToWorld(state.x, state.y);
+
+    // Crystal/orb mesh
+    const geo = new THREE.OctahedronGeometry(0.3, 1);
+    const mat = createResourceMaterial(state.resourceId);
+    const body = new THREE.Mesh(geo, mat);
+    body.position.y = 0.5;
+    body.castShadow = true;
+    group.add(body);
+
+    // Glow point light
+    const { color } = getResourceColor(state.resourceId);
+    const glow = new THREE.PointLight(color, 0.5, 3);
+    glow.position.set(0, 0.5, 0);
+    group.add(glow);
+
+    // Name label (safe DOM, textContent only)
+    const labelDiv = document.createElement('div');
+    labelDiv.className = 'resource-label-3d';
+    labelDiv.textContent = state.name;
+    const label = new CSS2DObject(labelDiv);
+    label.position.set(0, 1.0, 0);
+    group.add(label);
+
+    group.position.set(world.x, 0, world.z);
+    this.scene.add(group);
+
+    return { group, body, label, isGathered: false, fadeAlpha: 1.0 };
+  }
+
+  private disposeEnemy(enemy: EnemyMesh) {
+    enemy.group.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        child.geometry.dispose();
+        if (Array.isArray(child.material)) {
+          child.material.forEach(m => m.dispose());
+        } else {
+          child.material.dispose();
+        }
+      }
+    });
+    enemy.label.element.remove();
+    enemy.group.removeFromParent();
+  }
+
+  private disposeResource(resource: ResourceMesh) {
+    resource.body.geometry.dispose();
+    (resource.body.material as THREE.Material).dispose();
+    resource.label.element.remove();
+    resource.group.removeFromParent();
+  }
+
+  /** Raycast against visible enemy meshes. Returns closest hit. */
+  raycastEnemy(raycaster: THREE.Raycaster): { id: string; position: THREE.Vector3 } | null {
+    const allMeshes: THREE.Object3D[] = [];
+    const meshToId = new Map<THREE.Object3D, string>();
+
+    for (const [id, enemy] of this.enemies) {
+      if (!enemy.group.visible) continue;
+      enemy.group.traverse((child) => {
+        if (child instanceof THREE.Mesh) {
+          child.updateWorldMatrix(true, false);
+          allMeshes.push(child);
+          meshToId.set(child, id);
+        }
+      });
+    }
+
+    const hits = raycaster.intersectObjects(allMeshes, false);
+    if (hits.length > 0) {
+      const id = meshToId.get(hits[0].object);
+      if (id) {
+        const enemy = this.enemies.get(id)!;
+        return { id, position: enemy.currentPos.clone() };
+      }
+    }
+    return null;
+  }
+
+  /** Get the current world position of an enemy by id, or null if gone. */
+  getEnemyPosition(id: string): THREE.Vector3 | null {
+    const enemy = this.enemies.get(id);
+    return enemy ? enemy.currentPos.clone() : null;
+  }
+
+  resize(width: number, height: number) {
+    this.css2DRenderer.setSize(width, height);
+  }
+
+  dispose() {
+    for (const enemy of this.enemies.values()) this.disposeEnemy(enemy);
+    for (const resource of this.resources.values()) this.disposeResource(resource);
+    this.enemies.clear();
+    this.resources.clear();
+    this.css2DRenderer.domElement.remove();
+  }
+}

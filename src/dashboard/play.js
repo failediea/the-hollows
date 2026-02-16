@@ -940,6 +940,7 @@ function renderZoneDetails() {
                     </div>
                     <div class="mob-btn-row">
                         <button class="btn btn-attack-compact" onclick="attackMob('${m.id}', '${m.name}', ${m.hp})">⚔️ Attack</button>
+                        <button class="btn btn-3d-compact" onclick="enter3DDungeon()">🗡️ 3D Dungeon</button>
                     </div>
                 </div>`;
             }).join('');
@@ -4516,4 +4517,43 @@ function closeRealtimeCombat() {
     window.removeEventListener('message', handleRealtimeCombatMessage);
 }
 
+// ============ 3D DUNGEON MODE ============
+
+function enter3DDungeon() {
+    const zone = state.agent?.zone || 'tomb_halls';
+
+    // Remove existing overlay if any
+    let overlay = document.getElementById('dungeon3DOverlay');
+    if (overlay) overlay.remove();
+
+    // Create fullscreen overlay with iframe
+    overlay = document.createElement('div');
+    overlay.id = 'dungeon3DOverlay';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:10000;background:#0a0a0f;';
+
+    const params = new URLSearchParams({
+        mode: '3d',
+        zone: zone,
+    });
+
+    const iframe = document.createElement('iframe');
+    iframe.src = `/combat?${params.toString()}`;
+    iframe.style.cssText = 'width:100%;height:100%;border:none;';
+    iframe.id = 'dungeon3DIframe';
+    overlay.appendChild(iframe);
+
+    // Close button
+    const closeBtn = document.createElement('button');
+    closeBtn.textContent = '✕ Exit Dungeon';
+    closeBtn.style.cssText = 'position:absolute;top:12px;right:12px;z-index:10001;background:rgba(10,10,15,0.85);color:#ff6b35;border:1px solid #ff6b35;padding:8px 16px;border-radius:6px;cursor:pointer;font-family:MedievalSharp,serif;font-size:14px;';
+    closeBtn.onclick = close3DDungeon;
+    overlay.appendChild(closeBtn);
+
+    document.body.appendChild(overlay);
+}
+
+function close3DDungeon() {
+    const overlay = document.getElementById('dungeon3DOverlay');
+    if (overlay) overlay.remove();
+}
 

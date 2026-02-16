@@ -11,7 +11,7 @@ const app = mount(App, {
     zone: params.get('zone') || '',
     apiKey: params.get('apiKey') || '',
     encounterType: (params.get('encounterType') || 'mob') as 'mob' | 'gate_boss' | 'world_boss',
-    mode: (params.get('mode') || 'turnbased') as 'turnbased' | 'realtime',
+    mode: (params.get('mode') || 'turnbased') as 'turnbased' | 'realtime' | '3d',
   },
 });
 

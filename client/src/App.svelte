@@ -6,22 +6,43 @@
   import { realtimeStore } from './lib/stores/realtimeStore.svelte';
   import CombatOverlay from './lib/components/CombatOverlay.svelte';
   import RealtimeCombatOverlay from './lib/components/RealtimeCombatOverlay.svelte';
+  import ThreeScene from './lib/components/ThreeScene.svelte';
+  import ThreeDOverlay from './lib/components/ThreeDOverlay.svelte';
+  import ClassSelect from './lib/components/ClassSelect.svelte';
   import type { EncounterType } from './lib/stores/types';
+  import type { PlayerClass } from './lib/stores/types';
 
   let { combatId, zone, apiKey, encounterType, mode = 'turnbased' }: {
     combatId: string;
     zone: string;
     apiKey: string;
     encounterType: EncounterType;
-    mode?: 'turnbased' | 'realtime';
+    mode?: 'turnbased' | 'realtime' | '3d';
   } = $props();
 
   let isRealtime = $derived(mode === 'realtime');
+  let is3D = $derived(mode === '3d');
   let game: Phaser.Game | null = null;
   let ready = $state(false);
+  let pointerLocked = $state(false);
+  let selectedClass = $state<PlayerClass | null>(null);
+
+  async function handleClassSelect(cls: PlayerClass) {
+    selectedClass = cls;
+    // Connect demo with selected class
+    if (combatId) {
+      realtimeStore.connect(combatId, apiKey);
+    } else {
+      await realtimeStore.connectDemo(zone || 'tomb_halls', cls);
+    }
+    ready = true;
+  }
 
   onMount(async () => {
-    if (isRealtime) {
+    if (is3D) {
+      // 3D dungeon mode: show class select first (don't connect yet)
+      // Connection happens in handleClassSelect
+    } else if (isRealtime) {
       // Real-time mode: connect WebSocket and create arena scene
       realtimeStore.connect(combatId, apiKey);
       const config = createRealtimeGameConfig('phaser-container');
@@ -33,13 +54,15 @@
       game = new Phaser.Game(config);
     }
 
-    // Mark as ready once Phaser scene is created
-    game.events.on('ready', () => {
-      ready = true;
-    });
+    if (game) {
+      // Mark as ready once Phaser scene is created
+      game.events.on('ready', () => {
+        ready = true;
+      });
 
-    // Fallback: mark ready after a short delay
-    setTimeout(() => { ready = true; }, 1000);
+      // Fallback: mark ready after a short delay
+      setTimeout(() => { ready = true; }, 1000);
+    }
   });
 
   onDestroy(() => {
@@ -47,18 +70,28 @@
       game.destroy(true);
       game = null;
     }
-    if (isRealtime) {
+    if (isRealtime || is3D) {
       realtimeStore.disconnect();
     }
   });
 </script>
 
 <div class="combat-app">
-  <div id="phaser-container" class="phaser-container"></div>
-  {#if isRealtime}
-    <RealtimeCombatOverlay />
+  {#if is3D && !selectedClass}
+    <ClassSelect onSelect={handleClassSelect} />
+  {:else if is3D && selectedClass}
+    <ThreeScene
+      onPointerLockChange={(locked) => { pointerLocked = locked; }}
+      {selectedClass}
+    />
+    <ThreeDOverlay {pointerLocked} {selectedClass} />
   {:else}
-    <CombatOverlay />
+    <div id="phaser-container" class="phaser-container"></div>
+    {#if isRealtime}
+      <RealtimeCombatOverlay />
+    {:else}
+      <CombatOverlay />
+    {/if}
   {/if}
 </div>
 
