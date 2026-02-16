@@ -1108,7 +1108,7 @@ body {
     transition: border-color 0.2s, box-shadow 0.2s;
 }
 .quest-card:hover { border-color: rgba(255,107,53,0.3); box-shadow: 0 2px 12px rgba(255,107,53,0.06); }
-.quest-card.quest-active { border-left: 3px solid var(--ember-orange); }
+.quest-card.quest-active { border-left: 3px solid var(--ember-orange); width: 50%; }
 .quest-card.quest-claimable { border-left: 3px solid #fbbf24; border-color: rgba(251,191,36,0.3); }
 .quest-card.quest-done { border-left: 3px solid #4ade80; opacity: 0.6; }
 .quest-card.quest-locked { border-left: 3px solid rgba(255,255,255,0.1); opacity: 0.5; }
@@ -2863,6 +2863,7 @@ body {
 /* Login Box — Single Column Flow */
 .landing-login {
     width: 100%; max-width: 440px;
+    align-self: center;
 }
 
 /* Login Box Title */

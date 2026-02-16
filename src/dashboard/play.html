@@ -240,6 +240,17 @@
                     <div class="stat-item"><span class="stat-icon">🍀</span><span class="stat-label">LUCK</span><span class="stat-value" id="statLuck">0</span></div>
                 </div>
 
+                <!-- Rest -->
+                <div class="rest-card">
+                    <button class="btn btn-rest" id="restBtn" onclick="doAction('rest')">
+                        💤 Rest
+                        <span class="cooldown-bar" id="restCooldownBar" style="width:0%"></span>
+                    </button>
+                    <div class="rest-card-body">
+                        <span class="rest-info">Heals <strong>100% HP</strong> · 5 min cooldown</span>
+                    </div>
+                </div>
+
                 <!-- Gold -->
                 <div class="gold-display">
                     <span class="gold-icon">💰</span>
@@ -299,19 +310,9 @@
                     <div class="zone-lore-block" id="zoneLoreBlock">
                         <p id="zoneLore" class="zone-lore-text"></p>
                     </div>
-                    <div class="rest-card">
-                        <button class="btn btn-rest" id="restBtn" onclick="doAction('rest')">
-                            💤 Rest
-                            <span class="cooldown-bar" id="restCooldownBar" style="width:0%"></span>
-                        </button>
-                        <div class="rest-card-body">
-                            <span class="rest-info">Heals <strong>100% HP</strong> · 5 min cooldown</span>
-                        </div>
-                    </div>
-
                     <!-- Active Quest -->
                     <div class="zone-section" id="activeQuestSection" style="display:none">
-                        <h3 class="zone-section-title">❗ Quest</h3>
+                        <h3 class="zone-section-title">📜 Quest</h3>
                         <div id="activeQuestContent"></div>
                     </div>
 
