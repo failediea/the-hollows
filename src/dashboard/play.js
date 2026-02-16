@@ -1138,9 +1138,42 @@ function renderGuild() {
     container.innerHTML = html;
 }
 
+// ============ Agent API Key helpers ============
+let apiKeyVisible = false;
+
+function toggleApiKeyVisibility() {
+    apiKeyVisible = !apiKeyVisible;
+    const display = document.getElementById('apiKeyDisplay');
+    const toggle = document.getElementById('apiKeyToggle');
+    if (!display || !toggle) return;
+    const key = state.apiKey || '';
+    display.textContent = apiKeyVisible ? key : key.slice(0, 8) + '••••••••••••';
+    toggle.textContent = apiKeyVisible ? 'Hide' : 'Show';
+}
+
+function copyApiKey() {
+    const key = state.apiKey || '';
+    if (!key) return;
+    const btn = document.getElementById('apiKeyCopyBtn');
+    const write = navigator.clipboard ? navigator.clipboard.writeText(key) : new Promise((resolve, reject) => {
+        const ta = document.createElement('textarea');
+        ta.value = key;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy') ? resolve() : reject();
+        document.body.removeChild(ta);
+    });
+    write.then(() => {
+        if (btn) { btn.textContent = 'Copied!'; setTimeout(() => { btn.textContent = 'Copy'; }, 1500); }
+    }).catch(() => {});
+}
+
 // ============ RENDER: Chain ============
 function renderChain() {
     const container = document.getElementById('chainContent');
+    apiKeyVisible = false;
 
     let balanceHtml = '';
     if (state.walletAddress) {
@@ -1153,6 +1186,21 @@ function renderChain() {
             </div>
         `;
     }
+
+    const apiKey = state.apiKey || '';
+    const maskedKey = apiKey ? apiKey.slice(0, 8) + '••••••••••••' : 'Not available';
+    const apiKeyHtml = apiKey ? `
+        <div class="chain-section">
+            <h3>🤖 Agent API Key</h3>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                <code id="apiKeyDisplay" style="font-size:11px;color:var(--starsilver-silver);background:rgba(0,0,0,0.3);padding:4px 8px;border-radius:4px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${maskedKey}</code>
+                <button id="apiKeyToggle" class="btn-shop" style="font-size:10px;padding:4px 10px;min-width:50px" onclick="toggleApiKeyVisibility()">Show</button>
+                <button id="apiKeyCopyBtn" class="btn-shop" style="font-size:10px;padding:4px 10px;min-width:50px" onclick="copyApiKey()">Copy</button>
+            </div>
+            <p style="font-size:11px;color:var(--starsilver-silver);margin-bottom:6px">Use this key to control your character via the Agent API. <a href="/AGENT.md" target="_blank" style="color:var(--gold)">Read the docs →</a></p>
+            <div style="background:rgba(255,60,60,0.1);border:1px solid rgba(255,60,60,0.3);border-radius:4px;padding:8px;font-size:11px;color:#ff6b6b">⚠️ Keep this key private. Anyone with this key can control your character.</div>
+        </div>
+    ` : '';
 
     container.innerHTML = `
         ${balanceHtml}
@@ -1168,6 +1216,7 @@ function renderChain() {
                 <li>⏳ Season prize pool distribution</li>
             </ul>
         </div>
+        ${apiKeyHtml}
     `;
 
     // Update balance
