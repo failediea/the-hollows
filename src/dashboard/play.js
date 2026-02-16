@@ -1206,7 +1206,7 @@ function renderChain() {
                 <button id="apiKeyToggle" class="btn-shop" style="font-size:10px;padding:4px 10px;min-width:50px" onclick="toggleApiKeyVisibility()">Show</button>
                 <button id="apiKeyCopyBtn" class="btn-shop" style="font-size:10px;padding:4px 10px;min-width:50px" onclick="copyApiKey()">Copy</button>
             </div>
-            <p style="font-size:11px;color:var(--starsilver-silver);margin-bottom:6px">Use this key to control your character via the Agent API. <a href="/AGENT.md" target="_blank" style="color:var(--gold)">Read the docs →</a></p>
+            <p style="font-size:11px;color:var(--starsilver-silver);margin-bottom:6px">Use this key to control your character via the Agent API. <a href="https://the-hollows.up.railway.app/agentsetup" target="_blank" style="color:var(--gold)">Read the docs →</a></p>
             <div style="background:rgba(255,60,60,0.1);border:1px solid rgba(255,60,60,0.3);border-radius:4px;padding:8px;font-size:11px;color:#ff6b6b">⚠️ Keep this key private. Anyone with this key can control your character.</div>
         </div>
     ` : '';
