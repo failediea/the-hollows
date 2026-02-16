@@ -137,7 +137,7 @@ h1 {
                     <th class="stat">Lvl</th>
                     <th class="stat">XP</th>
                     <th class="stat">Kills</th>
-                    <th class="stat">Gold</th>
+                    <th class="stat">💰 Gold</th>
                     <th class="hide-mobile">Wallet</th>
                 </tr>
             </thead>
@@ -156,7 +156,7 @@ async function loadSeason() {
             <div style="display:flex;justify-content:space-between;width:100%;flex-wrap:wrap;gap:4px;">
                 <span class="season-label">🏰 Season ${s.id}</span>
                 <span class="prize">💰 ${(s.prizePool || 0).toLocaleString()} MON Prize Pool</span>
-                <span class="days">⏳ ${s.progress.daysRemaining} days remaining (Day ${s.progress.dayNumber})</span>
+                <span class="days">⏳ ${s.progress.daysRemaining > 1 ? s.progress.daysRemaining + 'd' : ''} ${s.progress.hoursRemaining % 24}h remaining (Day ${s.progress.dayNumber} of 7)</span>
             </div>
             <div class="progress-bar" style="width:100%;margin-top:8px;"><div class="progress-fill" style="width:${s.progress.percentComplete}%"></div></div>
         `;

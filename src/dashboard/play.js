@@ -1285,7 +1285,10 @@ async function renderLeaderboard() {
     const body = document.getElementById('lbBody');
     if (!body) return;
     try {
-        const res = await fetch(`${API}/api/leaderboard`);
+        const [res, seasonRes] = await Promise.all([
+            fetch(`${API}/api/leaderboard`),
+            fetch(`${API}/season`)
+        ]);
         const data = await res.json();
         if (!data.success) { body.innerHTML = '<tr><td colspan="6">Failed to load</td></tr>'; return; }
         body.innerHTML = data.agents.map((a, i) => {
@@ -1293,8 +1296,17 @@ async function renderLeaderboard() {
             const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `${rank}`;
             const type = a.walletAddress ? '👤' : '🤖';
             const cls = rank <= 3 ? `lb-top lb-rank-${rank}` : '';
-            return `<tr class="${cls}"><td>${medal}</td><td>${type} ${a.name}</td><td>${a.level}</td><td>${a.xp}</td><td>${a.kills}</td><td>${a.gold}</td></tr>`;
+            return `<tr class="${cls}"><td>${medal}</td><td>${type} ${a.name}</td><td>${a.level}</td><td>${a.xp}</td><td>${a.kills}</td><td>💰 ${a.gold}</td></tr>`;
         }).join('');
+        const timerEl = document.getElementById('seasonTimer');
+        if (timerEl) {
+            const sd = await seasonRes.json();
+            if (sd.success) {
+                const d = sd.season.progress.daysRemaining;
+                const h = sd.season.progress.hoursRemaining % 24;
+                timerEl.textContent = '\u23F3 Season ' + sd.season.id + ' \u00B7 ' + (d > 1 ? d + 'd ' : '') + h + 'h remaining (Day ' + sd.season.progress.dayNumber + ' of 7)';
+            }
+        }
     } catch(e) { body.innerHTML = '<tr><td colspan="6">Error loading leaderboard</td></tr>'; }
 }
 
