@@ -3,18 +3,19 @@ import { Agent } from '../db/schema.js';
 import { ZONES, getMobById } from '../world/zones.js';
 import { simulateGuildCombat } from './combat.js';
 import { trackQuestProgress } from './quests.js';
-import { 
-  gainXp, 
-  addGold, 
-  takeDamage, 
-  rest, 
-  moveZone, 
+import {
+  gainXp,
+  addGold,
+  takeDamage,
+  rest,
+  moveZone,
   addItemToInventory,
   updateLastAction,
   getTotalInventoryWeight,
   MAX_INVENTORY_WEIGHT,
   logActivity,
   equipItem,
+  canCarryItem,
 } from './agent.js';
 import { useConsumable, craftItem, ITEM_MIN_LEVELS } from './items.js';
 import { learnSkill, hasSkill } from './skills.js';
@@ -71,7 +72,7 @@ export async function handleAction(
     case 'rest': {
       // Rest cooldown: 5 minutes (2 minutes with Healing Light skill)
       const hasHealingLight = hasSkill(db, agent.id, 'healing_light');
-      const REST_COOLDOWN_MS = hasHealingLight ? 2 * 60 * 1000 : 5 * 60 * 1000;
+      const REST_COOLDOWN_MS = hasHealingLight ? 4 * 60 * 1000 : 5 * 60 * 1000;
       const lastRestRow = db.prepare('SELECT last_rest_at FROM agents WHERE id = ?').get(agent.id) as { last_rest_at: number } | undefined;
       const lastRestAt = lastRestRow?.last_rest_at || 0;
       const elapsed = Date.now() - lastRestAt;
@@ -609,6 +610,19 @@ function handleAcceptTrade(db: Database.Database, agent: Agent, tradeId?: number
     const minLevel = ITEM_MIN_LEVELS[itemCode];
     if (minLevel && proposer.level < minLevel) {
       return { success: false, message: `Proposer must be level ${minLevel} to receive ${itemCode.replace(/_/g, ' ')}` };
+    }
+  }
+
+  // Weight check: can target carry offered items?
+  for (const itemCode of offerItems) {
+    if (!canCarryItem(db, target.id, itemCode, 1)) {
+      return { success: false, message: `You cannot carry ${itemCode.replace(/_/g, ' ')} — inventory weight limit reached` };
+    }
+  }
+  // Weight check: can proposer carry requested items?
+  for (const itemCode of requestItems) {
+    if (!canCarryItem(db, proposer.id, itemCode, 1)) {
+      return { success: false, message: `Proposer cannot carry ${itemCode.replace(/_/g, ' ')} — inventory weight limit reached` };
     }
   }
 

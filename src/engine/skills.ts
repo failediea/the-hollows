@@ -76,10 +76,10 @@ export const SKILLS: Skill[] = [
     name: 'Silent Step',
     tree: 'shadow',
     cost: 1,
-    description: '25% chance to avoid combat when moving zones',
+    description: '+10% dodge chance in evasive stance',
     effect: {
       type: 'passive',
-      special: 'avoid_combat'
+      special: 'evasion_boost'
     }
   },
   {
@@ -111,10 +111,10 @@ export const SKILLS: Skill[] = [
     name: 'Pickpocket',
     tree: 'shadow',
     cost: 2,
-    description: 'Steal gold from mobs (extra 50% gold drops)',
+    description: '+3 LUCK',
     effect: {
-      type: 'special',
-      special: 'bonus_gold'
+      type: 'stat_boost',
+      luckBonus: 3
     }
   },
 
@@ -124,19 +124,19 @@ export const SKILLS: Skill[] = [
     name: 'Arcane Knowledge',
     tree: 'mystic',
     cost: 1,
-    description: '+50% XP from all sources',
+    description: 'Recover 10% HP after each combat victory',
     effect: {
       type: 'special',
-      special: 'bonus_xp'
+      special: 'combat_regen'
     }
   },
   {
     id: 'healing_light',
     name: 'Healing Light',
     tree: 'mystic',
-    cost: 2,
+    cost: 3,
     requires: 'arcane_knowledge',
-    description: 'Rest cooldown reduced to 2 minutes (from 5)',
+    description: 'Rest cooldown reduced to 4 minutes (from 5)',
     effect: {
       type: 'special',
       special: 'enhanced_rest'
@@ -159,10 +159,10 @@ export const SKILLS: Skill[] = [
     name: 'Mystic Insight',
     tree: 'mystic',
     cost: 2,
-    description: '+20% loot quality from all sources',
+    description: '+3 LUCK',
     effect: {
-      type: 'special',
-      special: 'loot_quality'
+      type: 'stat_boost',
+      luckBonus: 3
     }
   }
 ];

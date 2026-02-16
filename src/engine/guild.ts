@@ -1,5 +1,6 @@
 import Database from 'better-sqlite3';
 import { Guild, Agent } from '../db/schema.js';
+import { canCarryItem as canCarryItemCheck } from './agent.js';
 
 export type LootMode = 'round-robin' | 'need-before-greed' | 'leader-decides';
 
@@ -245,6 +246,12 @@ export function distributeLoot(
 }
 
 function addItemToInventory(db: Database.Database, agentId: number, itemCode: string): void {
+  // Weight check before adding
+  if (!canCarryItemCheck(db, agentId, itemCode, 1)) {
+    console.log(`Guild loot: agent ${agentId} cannot carry ${itemCode} — skipping`);
+    return;
+  }
+
   const existing = db.prepare('SELECT * FROM inventory WHERE agent_id = ? AND item_code = ?')
     .get(agentId, itemCode) as { id: number } | undefined;
 

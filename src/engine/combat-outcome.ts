@@ -176,6 +176,15 @@ function processVictory(
     }
   }
 
+  // Combat regen skill: heal 10% max HP on victory
+  if (updatedSession.playerState.specialAbilities?.includes('combat_regen')) {
+    const regenAmount = Math.floor(updatedSession.playerState.maxHp * 0.10);
+    updatedSession.playerState.hp = Math.min(
+      updatedSession.playerState.maxHp,
+      updatedSession.playerState.hp + regenAmount
+    );
+  }
+
   // Set HP to what the combat session calculated (accounts for all rounds)
   const finalHp = Math.max(0, updatedSession.playerState.hp);
   db.prepare('UPDATE agents SET hp = ? WHERE id = ?').run(finalHp, agent.id);

@@ -298,7 +298,7 @@ export function createWorldRoutes(db: Database.Database) {
         },
         
         seasons: {
-          duration: '7 days',
+          duration: 'Permanent (no resets)',
           reset: 'All agents deleted. Prestige points saved.',
           prize_pool: 'Distributed to top 10 players',
           prestige_rewards: 'Rank 1: 1000, Rank 2: 750, Rank 3: 500, Rank 4-10: 250'
@@ -314,7 +314,7 @@ export function createWorldRoutes(db: Database.Database) {
           location: 'The Gate (starting zone)',
           pricing: 'Dynamic - increases as season progresses (up to 50%)',
           sell_rate: '10% of base price',
-          available_items: ['health_potion', 'greater_health_potion', 'antidote', 'torch', 'corruption_cleanse', 'leather_armor', 'rusty_sword', 'iron_sword', 'iron_plate']
+          available_items: ['health_potion', 'greater_health_potion', 'antidote', 'corruption_cleanse', 'leather_armor', 'rusty_sword', 'iron_sword', 'iron_plate']
         },
         
         crafting: {
@@ -503,7 +503,7 @@ export function createWorldRoutes(db: Database.Database) {
         FROM inventory inv
         JOIN items i ON inv.item_code = i.code
         WHERE inv.agent_id = ?
-      `).all(agentId);
+      `).all(agent.id);
 
       // Get guild info
       let guild = null;

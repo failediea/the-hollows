@@ -19,6 +19,7 @@ export const RECIPES: Recipe[] = [
   { code: 'health_potion', name: 'Health Potion', desc: 'Restores 50 HP', mats: { herbs: 3 }, result: 'health_potion', minLevel: 1, requiredZone: null, requiresPlan: null, tier: 'basic' },
   { code: 'nunchaku', name: 'Nunchaku', desc: 'Two sticks and a rope', mats: { torchwood: 2 }, result: 'nunchaku', minLevel: 1, requiredZone: null, requiresPlan: null, tier: 'basic' },
   { code: 'bandage', name: 'Bandage', desc: 'Restores 25 HP', mats: { herbs: 2, torchwood: 1 }, result: 'bandage', minLevel: 1, requiredZone: null, requiresPlan: null, tier: 'basic' },
+  { code: 'greater_health_potion', name: 'Greater Health Potion', desc: 'Restores 100 HP', mats: { health_potion: 2, herbs: 1 }, result: 'greater_health_potion', minLevel: 4, requiredZone: null, requiresPlan: null, tier: 'apprentice' },
 
   // Apprentice (Tomb Halls/Mines, Lv 4-6)
   { code: 'bone_shield', name: 'Bone Shield', desc: 'Shield crafted from bone dust and iron', mats: { bone_dust: 5, iron_scraps: 3 }, result: 'bone_shield', minLevel: 4, requiredZone: null, requiresPlan: null, tier: 'apprentice' },
@@ -79,7 +80,7 @@ export const ITEMS: Omit<Item, 'id'>[] = [
     weight: 1,
     description: 'Restores 100 HP',
     craftable: true,
-    craft_recipe: JSON.stringify(['health_potion', 'health_potion', 'herbs'])
+    craft_recipe: JSON.stringify({ health_potion: 2, herbs: 1 })
   },
   {
     code: 'antidote',
@@ -93,7 +94,7 @@ export const ITEMS: Omit<Item, 'id'>[] = [
     weight: 1,
     description: 'Cures poison and restores 20 HP',
     craftable: true,
-    craft_recipe: JSON.stringify(['herbs', 'venom_sac'])
+    craft_recipe: JSON.stringify({ herbs: 3, bone_dust: 2 })
   },
   {
     code: 'nunchaku',
@@ -107,7 +108,7 @@ export const ITEMS: Omit<Item, 'id'>[] = [
     weight: 2,
     description: 'Two sticks and a rope',
     craftable: true,
-    craft_recipe: JSON.stringify(['torchwood'])
+    craft_recipe: JSON.stringify({ torchwood: 2 })
   },
   {
     code: 'corruption_cleanse',
@@ -381,7 +382,7 @@ export const ITEMS: Omit<Item, 'id'>[] = [
     weight: 20,
     description: 'Heavy but protective',
     craftable: true,
-    craft_recipe: JSON.stringify(['grave_iron', 'grave_iron', 'grave_iron', 'iron_scraps'])
+    craft_recipe: JSON.stringify({ iron_scraps: 8, dark_iron: 2 })
   },
   {
     code: 'cursed_helm',
@@ -511,7 +512,7 @@ export const ITEMS: Omit<Item, 'id'>[] = [
     weight: 5,
     description: 'Blessed blade of pure starsilver. Holy element.',
     craftable: true,
-    craft_recipe: JSON.stringify(['starsilver_ore', 'starsilver_ore', 'starsilver_ore', 'ember_core'])
+    craft_recipe: JSON.stringify({ starsilver_ore: 5, dark_iron: 3 })
   },
 
   // NEW ARMOR
@@ -967,7 +968,7 @@ export const ITEMS: Omit<Item, 'id'>[] = [
   {
     code: 'bone_shield',
     name: 'Bone Shield',
-    category: 'armor',
+    category: 'shield',
     rarity: 'uncommon',
     atk_bonus: 0, def_bonus: 6, hp_bonus: 10, corruption_per_action: 0, weight: 12,
     description: 'Shield crafted from bone dust and iron',
@@ -1012,7 +1013,7 @@ export const ITEMS: Omit<Item, 'id'>[] = [
   {
     code: 'ember_shield',
     name: 'Ember Shield',
-    category: 'armor',
+    category: 'shield',
     rarity: 'rare',
     atk_bonus: 0, def_bonus: 12, hp_bonus: 20, corruption_per_action: 0, weight: 15,
     description: 'Shield infused with dark iron and gems',

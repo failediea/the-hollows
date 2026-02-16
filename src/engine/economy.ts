@@ -1,5 +1,6 @@
 import Database from 'better-sqlite3';
 import { Agent, Item } from '../db/schema.js';
+import { canCarryItem } from './agent.js';
 
 export interface ShopItem {
   code: string;
@@ -16,7 +17,7 @@ export const SHOP_ITEMS: ShopItem[] = [
   { code: 'greater_health_potion_2', basePrice: 50, stock: -1 },
   { code: 'speed_elixir', basePrice: 30, stock: -1 },
   { code: 'antidote', basePrice: 25, stock: -1 },
-  { code: 'torch', basePrice: 5, stock: -1 },
+
   { code: 'corruption_cleanse', basePrice: 100, stock: -1 },
   { code: 'leather_armor', basePrice: 50, stock: 5 },
   { code: 'rusty_sword', basePrice: 40, stock: 5 },
@@ -66,6 +67,11 @@ export function buyFromShop(
   const item = db.prepare('SELECT weight FROM items WHERE code = ?').get(itemCode) as { weight: number } | undefined;
   if (!item) {
     return { success: false, message: 'Item data not found' };
+  }
+
+  // Weight check
+  if (!canCarryItem(db, agentId, itemCode, quantity)) {
+    return { success: false, message: 'Cannot carry this item — inventory weight limit reached' };
   }
 
   // Deduct gold

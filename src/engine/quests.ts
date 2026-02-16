@@ -1,4 +1,5 @@
 import Database from 'better-sqlite3';
+import { gainXp } from './agent.js';
 
 export interface QuestObjective {
   type: 'kill' | 'collect' | 'gather' | 'craft' | 'gate_boss';
@@ -379,7 +380,7 @@ export function claimQuestReward(db: Database.Database, agentId: number, questId
 
     // Grant rewards
     const r = quest.rewards;
-    if (r.xp) db.prepare('UPDATE agents SET xp = xp + ? WHERE id = ?').run(r.xp, agentId);
+    if (r.xp) gainXp(db, agentId, r.xp);
     if (r.gold) db.prepare('UPDATE agents SET gold = gold + ? WHERE id = ?').run(r.gold, agentId);
     if (r.skillPoints) db.prepare('UPDATE agents SET skill_points = skill_points + ? WHERE id = ?').run(r.skillPoints, agentId);
     if (r.item) {
@@ -390,19 +391,6 @@ export function claimQuestReward(db: Database.Database, agentId: number, questId
         db.prepare('INSERT INTO inventory (agent_id, item_code, quantity, acquired_at) VALUES (?, ?, ?, ?)')
           .run(agentId, r.item.code, r.item.quantity, Date.now());
       }
-    }
-
-    // Check level up
-    const agent = db.prepare('SELECT xp, level FROM agents WHERE id = ?').get(agentId) as any;
-    const xpThresholds = [0, 50, 120, 220, 350, 520, 730, 1000, 1350, 1800, 2400, 3200, 4200, 5500, 7200];
-    let newLevel = agent.level;
-    while (newLevel < xpThresholds.length - 1 && agent.xp >= xpThresholds[newLevel]) {
-      newLevel++;
-    }
-    if (newLevel > agent.level) {
-      const hpGain = (newLevel - agent.level) * 10;
-      db.prepare('UPDATE agents SET level = ?, max_hp = max_hp + ?, hp = MIN(hp + ?, max_hp + ?), atk = atk + ?, def = def + ?, spd = spd + ? WHERE id = ?')
-        .run(newLevel, hpGain, hpGain, hpGain, newLevel - agent.level, newLevel - agent.level, newLevel - agent.level, agentId);
     }
 
     return {

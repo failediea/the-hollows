@@ -9,6 +9,8 @@ import {
   createParty,
   joinParty,
   inviteToParty,
+  acceptInvite,
+  declineInvite,
   leaveParty,
   kickFromParty,
   getMyParty,
@@ -64,6 +66,32 @@ export function createPartyRoutes(db: Database.Database) {
     }
 
     const result = inviteToParty(db, agent.id, body.partyId, body.targetAgent);
+    if (!result.success) return c.json({ error: result.message }, 400);
+    return c.json({ success: true, message: result.message });
+  });
+
+  // POST /party/accept-invite
+  app.post('/party/accept-invite', async (c) => {
+    const body = await c.req.json().catch(() => ({}));
+    const apiKey = getApiKeyFromRequest(c, body);
+    if (!apiKey) return c.json({ error: 'API key required' }, 401);
+    const agent = getAgentByApiKey(db, apiKey);
+    if (!agent) return c.json({ error: 'Invalid API key or dead agent' }, 401);
+
+    const result = acceptInvite(db, agent.id);
+    if (!result.success) return c.json({ error: result.message }, 400);
+    return c.json({ success: true, message: result.message, party: result.party ? formatParty(result.party) : null });
+  });
+
+  // POST /party/decline-invite
+  app.post('/party/decline-invite', async (c) => {
+    const body = await c.req.json().catch(() => ({}));
+    const apiKey = getApiKeyFromRequest(c, body);
+    if (!apiKey) return c.json({ error: 'API key required' }, 401);
+    const agent = getAgentByApiKey(db, apiKey);
+    if (!agent) return c.json({ error: 'Invalid API key or dead agent' }, 401);
+
+    const result = declineInvite(agent.id);
     if (!result.success) return c.json({ error: result.message }, 400);
     return c.json({ success: true, message: result.message });
   });

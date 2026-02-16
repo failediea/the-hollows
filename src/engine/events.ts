@@ -290,7 +290,7 @@ export function triggerZoneEvent(db: Database.Database, agent: Agent): EventResu
 export function applyEventEffects(db: Database.Database, agentId: number, effects: EventResult['effects']): void {
   if (effects.hp !== undefined && effects.hp !== 0) {
     if (effects.hp > 0) {
-      // Healing is handled separately if needed
+      db.prepare('UPDATE agents SET hp = MIN(max_hp, hp + ?) WHERE id = ?').run(effects.hp, agentId);
     } else {
       takeDamage(db, agentId, Math.abs(effects.hp));
     }

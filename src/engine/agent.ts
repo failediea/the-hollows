@@ -90,19 +90,7 @@ export function gainXp(db: Database.Database, agentId: number, xpAmount: number)
   const agent = db.prepare('SELECT * FROM agents WHERE id = ?').get(agentId) as Agent;
   if (!agent || agent.is_dead) return null;
 
-  // Check for Arcane Knowledge skill (+50% XP)
-  let xpMultiplier = 1.0;
-  try {
-    const hasArcaneKnowledge = db.prepare('SELECT 1 FROM agent_skills WHERE agent_id = ? AND skill_id = "arcane_knowledge"')
-      .get(agentId);
-    if (hasArcaneKnowledge) {
-      xpMultiplier = 1.5;
-    }
-  } catch (error) {
-    // Skill system not initialized yet, ignore
-  }
-
-  const adjustedXp = Math.floor(xpAmount * xpMultiplier);
+  const adjustedXp = xpAmount;
   const newXp = agent.xp + adjustedXp;
   const newLevel = getLevelForXp(newXp);
 

@@ -63,6 +63,7 @@ export interface PlayerCombatState {
   stunned: boolean;
   riposteActive: boolean;
   hasShield: boolean;
+  specialAbilities?: string[];
 }
 
 export interface EnemyCombatState {
@@ -383,6 +384,7 @@ export function createCombatSession(
       stunned: false,
       riposteActive: false,
       hasShield,
+      specialAbilities: skillBonuses.specialAbilities,
     },
     enemyState: {
       name: enemy.name,
@@ -757,15 +759,20 @@ function resolveRound(
     } else {
       events.push('flee_failed');
       // Enemy gets free hit
-      const { damage, eventList, narr } = resolveAttack(
+      const fleeHit = resolveAttack(
         enemy, player, 'aggressive', { type: 'basic_attack' },
         playerStance, rng, stanceInteraction
       );
-      playerDamageTaken = damage;
-      enemyDamageDealt = damage;
-      events.push(...eventList);
-      narrative = `Flee failed! ${enemy.name} strikes you as you attempt to escape. ${narr}`;
-      player.hp -= damage;
+      playerDamageTaken = fleeHit.damage;
+      enemyDamageDealt = fleeHit.damage;
+      events.push(...fleeHit.eventList);
+      narrative = `Flee failed! ${enemy.name} strikes you as you attempt to escape. ${fleeHit.narr}`;
+      player.hp -= fleeHit.damage;
+      if (fleeHit.counterDamage > 0) {
+        enemy.hp -= fleeHit.counterDamage;
+        playerDamageDealt += fleeHit.counterDamage;
+        enemyDamageTaken += fleeHit.counterDamage;
+      }
       return {
         round: session.round,
         playerStance,
@@ -802,6 +809,12 @@ function resolveRound(
     enemyDamageDealt = enemyResult.damage;
     events.push(...enemyResult.eventList);
     player.hp -= enemyResult.damage;
+    // Apply counter damage from player's dodge/riposte
+    if (enemyResult.counterDamage > 0) {
+      enemy.hp -= enemyResult.counterDamage;
+      playerDamageDealt += enemyResult.counterDamage;
+      enemyDamageTaken += enemyResult.counterDamage;
+    }
     narrative += enemyResult.narr;
 
     // Apply status effects and cooldowns
@@ -809,8 +822,30 @@ function resolveRound(
     tickStatusEffects(player, events);
     tickStatusEffects(enemy, events);
     regenerateStamina(player, playerAction);
-    player.stunned = false;
-    enemy.stunned = false;
+    if (player.stunned) {
+      const stunEffect = player.buffs.find(b => b.stat === 'stun');
+      if (stunEffect) {
+        stunEffect.duration--;
+        if (stunEffect.duration <= 0) {
+          player.stunned = false;
+          player.buffs = player.buffs.filter(b => b.stat !== 'stun');
+        }
+      } else {
+        player.stunned = false;
+      }
+    }
+    if (enemy.stunned) {
+      const stunEffect = enemy.buffs.find(b => b.stat === 'stun');
+      if (stunEffect) {
+        stunEffect.duration--;
+        if (stunEffect.duration <= 0) {
+          enemy.stunned = false;
+          enemy.buffs = enemy.buffs.filter(b => b.stat !== 'stun');
+        }
+      } else {
+        enemy.stunned = false;
+      }
+    }
 
     return {
       round: session.round,
@@ -841,6 +876,12 @@ function resolveRound(
     enemyDamageTaken = playerResult.damage;
     events.push(...playerResult.eventList);
     enemy.hp -= playerResult.damage;
+    // Apply counter damage from enemy's dodge/riposte back to player
+    if (playerResult.counterDamage > 0) {
+      player.hp -= playerResult.counterDamage;
+      playerDamageTaken += playerResult.counterDamage;
+      enemyDamageDealt += playerResult.counterDamage;
+    }
 
     // Check if enemy died
     if (enemy.hp <= 0) {
@@ -851,10 +892,16 @@ function resolveRound(
         enemy, player, enemyStance, enemyAction,
         playerStance, rng, stanceInteraction
       );
-      playerDamageTaken = enemyResult.damage;
-      enemyDamageDealt = enemyResult.damage;
+      playerDamageTaken += enemyResult.damage;
+      enemyDamageDealt += enemyResult.damage;
       events.push(...enemyResult.eventList);
       player.hp -= enemyResult.damage;
+      // Apply counter damage from player's dodge/riposte back to enemy
+      if (enemyResult.counterDamage > 0) {
+        enemy.hp -= enemyResult.counterDamage;
+        playerDamageDealt += enemyResult.counterDamage;
+        enemyDamageTaken += enemyResult.counterDamage;
+      }
 
       narrative = `${playerResult.narr} ${enemyResult.narr}`;
     }
@@ -868,6 +915,12 @@ function resolveRound(
     enemyDamageDealt = enemyResult.damage;
     events.push(...enemyResult.eventList);
     player.hp -= enemyResult.damage;
+    // Apply counter damage from player's dodge/riposte back to enemy
+    if (enemyResult.counterDamage > 0) {
+      enemy.hp -= enemyResult.counterDamage;
+      playerDamageDealt += enemyResult.counterDamage;
+      enemyDamageTaken += enemyResult.counterDamage;
+    }
 
     // Check if player died
     if (player.hp <= 0) {
@@ -878,10 +931,16 @@ function resolveRound(
         player, enemy, playerStance, playerAction,
         enemyStance, rng, stanceInteraction
       );
-      playerDamageDealt = playerResult.damage;
-      enemyDamageTaken = playerResult.damage;
+      playerDamageDealt += playerResult.damage;
+      enemyDamageTaken += playerResult.damage;
       events.push(...playerResult.eventList);
       enemy.hp -= playerResult.damage;
+      // Apply counter damage from enemy's dodge/riposte back to player
+      if (playerResult.counterDamage > 0) {
+        player.hp -= playerResult.counterDamage;
+        playerDamageTaken += playerResult.counterDamage;
+        enemyDamageDealt += playerResult.counterDamage;
+      }
 
       if (enemy.hp <= 0) {
         narrative = `${enemyResult.narr} ${playerResult.narr} ${enemy.name} has been slain!`;
@@ -899,9 +958,31 @@ function resolveRound(
   // Stamina regeneration
   regenerateStamina(player, playerAction);
 
-  // Clear stun flags
-  player.stunned = false;
-  enemy.stunned = false;
+  // Decrement stun from status effects rather than clearing unconditionally
+  if (player.stunned) {
+    const stunEffect = player.buffs.find(b => b.stat === 'stun');
+    if (stunEffect) {
+      stunEffect.duration--;
+      if (stunEffect.duration <= 0) {
+        player.stunned = false;
+        player.buffs = player.buffs.filter(b => b.stat !== 'stun');
+      }
+    } else {
+      player.stunned = false;
+    }
+  }
+  if (enemy.stunned) {
+    const stunEffect = enemy.buffs.find(b => b.stat === 'stun');
+    if (stunEffect) {
+      stunEffect.duration--;
+      if (stunEffect.duration <= 0) {
+        enemy.stunned = false;
+        enemy.buffs = enemy.buffs.filter(b => b.stat !== 'stun');
+      }
+    } else {
+      enemy.stunned = false;
+    }
+  }
 
   return {
     round: session.round,
@@ -932,7 +1013,7 @@ function resolveAttack(
   defenderStance: Stance,
   rng: RngAuditor,
   stanceInteraction: string | null
-): { damage: number; eventList: string[]; narr: string } {
+): { damage: number; counterDamage: number; eventList: string[]; narr: string } {
   const events: string[] = [];
   let damage = 0;
   let narr = '';
@@ -940,7 +1021,7 @@ function resolveAttack(
   // Guard action
   if (attackerAction.type === 'guard') {
     narr = `${(attacker as any).name || 'You'} take${attacker === defender ? '' : 's'} a defensive stance.`;
-    return { damage: 0, eventList: events, narr };
+    return { damage: 0, counterDamage: 0, eventList: events, narr };
   }
 
   // Support abilities (no damage, effect only)
@@ -951,7 +1032,7 @@ function resolveAttack(
       const effectTarget = selfEffects.includes(supportAbil.effect.type) ? attacker : defender;
       applyAbilityEffect(supportAbil.effect, effectTarget, events);
       narr = `${(attacker as any).name || 'You'} used ${supportAbil.name}!`;
-      return { damage: 0, eventList: events, narr };
+      return { damage: 0, counterDamage: 0, eventList: events, narr };
     }
   }
 
@@ -961,24 +1042,27 @@ function resolveAttack(
 
   // Check for dodge (evasive stance)
   if (defenderStance === 'evasive') {
-    const dodgeChance = calculateDodgeChance(
+    let dodgeChance = calculateDodgeChance(
       (defender as any).spd,
       (attacker as any).spd,
       attackerStance === 'balanced'
     );
+    // evasion_boost skill (Silent Step): +10% dodge chance
+    if ('specialAbilities' in defender && (defender as PlayerCombatState).specialAbilities?.includes('evasion_boost')) {
+      dodgeChance = Math.min(0.60, dodgeChance + 0.10);
+    }
     if (rng.rollChance('dodge', dodgeChance)) {
       events.push('dodged');
       narr = `${(defender as any).name || 'You'} dodge${defender !== attacker ? '' : ''} the attack!`;
-      
+
       // Counter-attack on dodge
       const counterDamage = Math.max(1, Math.floor(
         (defender as any).atk * COMBAT_CONFIG.EVASIVE_COUNTER_MULTIPLIER
       ));
-      (attacker as any).hp -= counterDamage;
       events.push('counter');
       narr += ` Counter: ${counterDamage} damage!`;
-      
-      return { damage: 0, eventList: events, narr };
+
+      return { damage: 0, counterDamage, eventList: events, narr };
     }
   }
 
@@ -991,17 +1075,17 @@ function resolveAttack(
     if (rng.rollChance('block', blockChance)) {
       events.push('blocked');
       narr = `${(defender as any).name || 'You'} block${defender !== attacker ? '' : ''} the attack completely!`;
-      return { damage: 0, eventList: events, narr };
+      return { damage: 0, counterDamage: 0, eventList: events, narr };
     }
   }
 
   // Check for riposte
+  let riposteCounterDamage = 0;
   if ('riposteActive' in defender && (defender as PlayerCombatState).riposteActive) {
     (defender as PlayerCombatState).riposteActive = false;
-    const counterDmg = Math.max(1, Math.floor(getEffectiveAtk(defender) * 0.8));
-    (attacker as any).hp -= counterDmg;
+    riposteCounterDamage = Math.max(1, Math.floor(getEffectiveAtk(defender) * 0.8));
     events.push('riposte_counter');
-    narr = `Riposte! Counter for ${counterDmg} damage! `;
+    narr = `Riposte! Counter for ${riposteCounterDamage} damage! `;
   }
 
   // Calculate damage with effective stats (buff-modified)
@@ -1071,7 +1155,7 @@ function resolveAttack(
     }
   }
 
-  return { damage, eventList: events, narr };
+  return { damage, counterDamage: riposteCounterDamage, eventList: events, narr };
 }
 
 /**
@@ -1293,15 +1377,7 @@ function getEffectiveDef(combatant: PlayerCombatState | EnemyCombatState): numbe
  * Regenerate stamina
  */
 function regenerateStamina(player: PlayerCombatState, action: CombatAction): void {
-  let regen = COMBAT_CONFIG.STAMINA_REGEN_PER_ROUND;
-  
-  if (action.type === 'guard') {
-    regen += COMBAT_CONFIG.GUARD_BONUS_STAMINA;
-  }
-  
-  player.stamina = Math.min(player.maxStamina, player.stamina + regen);
-  
-  // Deduct stamina for abilities
+  // Deduct stamina for abilities FIRST
   if (action.type === 'ability' && action.abilityId) {
     const ability = player.abilities.find(a => a.id === action.abilityId);
     if (ability) {
@@ -1309,6 +1385,13 @@ function regenerateStamina(player: PlayerCombatState, action: CombatAction): voi
       ability.cooldown = ability.maxCooldown;
     }
   }
+
+  // Then regenerate
+  let regen = COMBAT_CONFIG.STAMINA_REGEN_PER_ROUND;
+  if (action.type === 'guard') {
+    regen += COMBAT_CONFIG.GUARD_BONUS_STAMINA;
+  }
+  player.stamina = Math.min(player.maxStamina, player.stamina + regen);
 }
 
 /**

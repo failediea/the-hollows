@@ -51,6 +51,7 @@ export interface LootRoll {
 
 const parties = new Map<string, Party>();
 const agentToParty = new Map<number, string>(); // agentId -> partyId
+const pendingInvites = new Map<number, string>(); // agentId -> partyId
 const lootRolls = new Map<string, LootRoll>(); // combatId -> LootRoll
 
 // ============ PARTY MANAGEMENT ============
@@ -146,19 +147,63 @@ export function inviteToParty(db: Database.Database, inviterId: number, partyId:
     return { success: false, message: 'Target must be in the same zone' };
   }
 
-  // Auto-join on invite (no pending system for simplicity)
+  // Add to pending invites — target must accept
+  pendingInvites.set(target.id, partyId);
+
+  return { success: true, message: `Invite sent to ${target.name}. They must accept to join.` };
+}
+
+export function acceptInvite(db: Database.Database, agentId: number): { success: boolean; message: string; party?: Party } {
+  const partyId = pendingInvites.get(agentId);
+  if (!partyId) return { success: false, message: 'No pending invite' };
+
+  if (agentToParty.has(agentId)) {
+    pendingInvites.delete(agentId);
+    return { success: false, message: 'You are already in a party' };
+  }
+
+  const party = parties.get(partyId);
+  if (!party) {
+    pendingInvites.delete(agentId);
+    return { success: false, message: 'Party no longer exists' };
+  }
+
+  if (party.members.length >= party.maxSize) {
+    pendingInvites.delete(agentId);
+    return { success: false, message: 'Party is full' };
+  }
+
+  const agent = db.prepare('SELECT * FROM agents WHERE id = ? AND is_dead = 0').get(agentId) as Agent | undefined;
+  if (!agent) {
+    pendingInvites.delete(agentId);
+    return { success: false, message: 'Agent not found or dead' };
+  }
+
   party.members.push({
-    agentId: target.id,
-    agentName: target.name,
-    level: target.level,
-    hp: target.hp,
-    maxHp: target.max_hp,
-    zone: target.zone_id,
+    agentId: agent.id,
+    agentName: agent.name,
+    level: agent.level,
+    hp: agent.hp,
+    maxHp: agent.max_hp,
+    zone: agent.zone_id,
   });
 
-  agentToParty.set(target.id, partyId);
+  agentToParty.set(agentId, partyId);
+  pendingInvites.delete(agentId);
 
-  return { success: true, message: `${target.name} has been invited and joined the party` };
+  return { success: true, message: `Joined the party`, party };
+}
+
+export function declineInvite(agentId: number): { success: boolean; message: string } {
+  if (!pendingInvites.has(agentId)) {
+    return { success: false, message: 'No pending invite' };
+  }
+  pendingInvites.delete(agentId);
+  return { success: true, message: 'Invite declined' };
+}
+
+export function getPendingInvite(agentId: number): string | null {
+  return pendingInvites.get(agentId) || null;
 }
 
 export function leaveParty(agentId: number): { success: boolean; message: string } {

@@ -416,9 +416,16 @@ function renderCharPanel() {
     document.getElementById('hpText').textContent = `${a.hp} / ${a.maxHp}`;
 
     // XP
-    const xpInLevel = a.xp % 100;
-    document.getElementById('xpBar').style.width = xpInLevel + '%';
-    document.getElementById('xpText').textContent = `${xpInLevel} / 100`;
+    function xpRequiredForLevel(level) {
+      return (level - 1) * (50 + 5 * level);
+    }
+    const currentThreshold = xpRequiredForLevel(a.level);
+    const nextThreshold = xpRequiredForLevel(a.level + 1);
+    const xpInLevel = a.xp - currentThreshold;
+    const xpNeeded = nextThreshold - currentThreshold;
+    const xpPct = xpNeeded > 0 ? Math.min(100, (xpInLevel / xpNeeded) * 100) : 100;
+    document.getElementById('xpBar').style.width = xpPct + '%';
+    document.getElementById('xpText').textContent = `${xpInLevel} / ${xpNeeded}`;
 
     // Corruption
     const corrPct = Math.min(a.corruption, 100);

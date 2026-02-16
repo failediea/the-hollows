@@ -40,7 +40,7 @@ export interface Item {
   id: number;
   code: string;
   name: string;
-  category: 'weapon' | 'armor' | 'artifact' | 'accessory' | 'consumable' | 'material' | 'plan';
+  category: 'weapon' | 'armor' | 'shield' | 'artifact' | 'accessory' | 'consumable' | 'material' | 'plan';
   rarity: 'common' | 'uncommon' | 'rare' | 'legendary' | 'cursed';
   atk_bonus: number;
   def_bonus: number;
