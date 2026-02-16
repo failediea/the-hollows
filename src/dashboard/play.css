@@ -1855,12 +1855,15 @@ body {
 
 .flee-standalone {
     position: absolute;
-    right: 0;
-    top: 50%;
+    right: 20px;
+    top: calc(50% - 8px);
     transform: translateY(-50%);
     margin: 0;
     padding: 18px 36px;
     min-width: 120px;
+}
+.flee-standalone:hover {
+    transform: translateY(-50%) scale(1.03) !important;
 }
 
 .combat-confirm-btn {
