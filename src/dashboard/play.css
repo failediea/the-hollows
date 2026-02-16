@@ -107,7 +107,7 @@ body {
     overflow-y: auto;
     background: url('/assets/login-bg.png') center/cover no-repeat, radial-gradient(ellipse at center, rgba(45,27,78,0.3) 0%, var(--void-black) 70%);
 }
-.login-screen::before { content: ''; position: absolute; inset: 0; background: rgba(0,0,0,0.45); z-index: 0; }
+.login-screen::before { content: ''; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 0; pointer-events: none; }
 .login-box { position: relative; z-index: 1;
     background: var(--panel-bg); border: 1px solid rgba(255,107,53,0.45);
     border-radius: 12px; padding: 40px; width: 100%; max-width: 95vw;
