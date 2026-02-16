@@ -427,6 +427,9 @@ function renderCharPanel() {
     document.getElementById('xpBar').style.width = xpPct + '%';
     document.getElementById('xpText').textContent = `${xpInLevel} / ${xpNeeded}`;
 
+    // Gold
+    document.getElementById('charGold').textContent = (a.gold || 0).toLocaleString();
+
     // Corruption
     const corrPct = Math.min(a.corruption, 100);
     document.getElementById('corruptionBar').style.width = corrPct + '%';
