@@ -443,13 +443,10 @@ function renderCharPanel() {
     document.getElementById('statSpd').textContent = baseSpd;
     document.getElementById('statLuck').textContent = baseLuck;
 
-    // Gold
-    document.getElementById('goldAmount').textContent = a.gold || 0;
-
     // Skill Points (show if > 0)
     let spEl = document.getElementById('skillPointsDisplay');
     if (!spEl) {
-        const goldDisplay = document.querySelector('.gold-display');
+        const goldDisplay = document.querySelector('.char-status');
         if (goldDisplay) {
             spEl = document.createElement('div');
             spEl.id = 'skillPointsDisplay';
@@ -544,8 +541,13 @@ function renderInventory() {
     const items = a.inventory || [];
     grid.innerHTML = '';
 
+    // Gold slot — always first
+    const goldSlot = document.createElement('div');
+    goldSlot.className = 'inv-slot';
+    goldSlot.innerHTML = `<span>💰</span><span class="inv-qty">${a.gold || 0}</span><div class="inv-tooltip"><div class="tt-name">Gold</div></div>`;
+    grid.appendChild(goldSlot);
+
     if (items.length === 0) {
-        grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--starsilver-silver);font-size:11px;padding:12px;">Empty</div>';
         return;
     }
 
