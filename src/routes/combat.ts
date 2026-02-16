@@ -8,6 +8,7 @@ import {
   CombatAction,
   Stance,
   COMBAT_CONFIG,
+  STANCE_COMBOS,
 } from '../engine/combat-session.js';
 import { processCombatOutcome } from '../engine/combat-outcome.js';
 import { getApiKeyFromRequest } from '../utils/validation.js';
@@ -73,7 +74,10 @@ export function createCombatRoutes(db: Database.Database) {
         archetype: session.enemyState.archetype,
         buffs: session.enemyState.buffs,
         debuffs: session.enemyState.debuffs,
+        atk: session.enemyState.atk,
       },
+      intent: session.enemyIntent || null,
+      combos: STANCE_COMBOS || [],
       agent: {
         hp: session.playerState.hp,
         maxHp: session.playerState.maxHp,
@@ -157,8 +161,9 @@ export function createCombatRoutes(db: Database.Database) {
         return c.json({ error: `Ability on cooldown (${ability.cooldown} rounds remaining)` }, 400);
       }
 
-      if (session.playerState.stamina < ability.staminaCost) {
-        return c.json({ error: `Insufficient stamina (need ${ability.staminaCost}, have ${session.playerState.stamina})` }, 400);
+      const maxDeficit = 2; // OVEREXERTION_MAX_DEFICIT
+      if (session.playerState.stamina + maxDeficit < ability.staminaCost) {
+        return c.json({ error: `Insufficient stamina (need ${ability.staminaCost}, have ${session.playerState.stamina}, max overexert: ${maxDeficit})` }, 400);
       }
     }
 
@@ -207,6 +212,7 @@ export function createCombatRoutes(db: Database.Database) {
           maxHp: updatedSession.enemyState.maxHp,
           buffs: updatedSession.enemyState.buffs,
           debuffs: updatedSession.enemyState.debuffs,
+          atk: updatedSession.enemyState.atk,
         },
         abilities: updatedSession.playerState.abilities.map(a => ({
           id: a.id,
@@ -219,6 +225,8 @@ export function createCombatRoutes(db: Database.Database) {
       deadlineAt: updatedSession.deadlineAt,
       secondsRemaining: Math.max(0, Math.floor((updatedSession.deadlineAt - Date.now()) / 1000)),
       encounterType: updatedSession.encounterType,
+      intent: updatedSession.enemyIntent || null,
+      activeCombo: resolution.activeCombo || null,
     };
 
     // Handle combat end

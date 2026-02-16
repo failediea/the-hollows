@@ -2601,6 +2601,353 @@ let activeCombat = null;
 let combatTimeout = null;
 let combatTimer = 15;
 
+// ============ COMBAT OVERHAUL — Helper Functions ============
+
+function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// Phase 1A: Element color helper
+function getElementColor(element) {
+    const map = {
+        fire: { color: '#ff6b35', glow: 'rgba(255,107,53,0.8)', cls: 'fire' },
+        ice: { color: '#60d5f7', glow: 'rgba(96,213,247,0.8)', cls: 'ice' },
+        shadow: { color: '#a855f7', glow: 'rgba(168,85,247,0.8)', cls: 'shadow' },
+        holy: { color: '#ffd700', glow: 'rgba(255,215,0,0.8)', cls: 'holy' },
+        none: { color: '#ff3333', glow: 'rgba(255,51,51,0.6)', cls: 'none' },
+    };
+    return map[element] || map.none;
+}
+
+// Phase 1B: Screen flash
+function spawnScreenFlash(flashClass) {
+    const div = document.createElement('div');
+    div.className = 'combat-screen-flash ' + flashClass;
+    document.body.appendChild(div);
+    div.addEventListener('animationend', () => div.remove());
+}
+
+// Phase 1D: Hit effect + screen shake helpers
+function applyHitEffect(selector, element, isCrit) {
+    const el = document.querySelector(selector);
+    if (!el) return;
+    const elCls = getElementColor(element || 'none').cls;
+    const flashCls = isCrit ? 'hit-flash-crit' : ('hit-flash-' + elCls);
+    el.classList.add(flashCls, 'hit-stop');
+    setTimeout(() => { el.classList.remove(flashCls, 'hit-stop'); }, isCrit ? 600 : 500);
+    spawnScreenFlash(isCrit ? 'flash-crit' : ('flash-' + elCls));
+}
+
+function applyScreenShake(isCrit, target) {
+    const arena = document.getElementById('tacticalArena');
+    if (!arena) return;
+    const cls = isCrit ? 'screen-shake-heavy' :
+                target === 'player' ? 'screen-shake-left' :
+                target === 'enemy' ? 'screen-shake-right' : 'screen-shake-light';
+    arena.classList.add(cls);
+    setTimeout(() => arena.classList.remove(cls), isCrit ? 500 : 350);
+}
+
+// Phase 3A: Dodge/Block/Guard animations
+function playDodgeAnimation(selector) {
+    const el = document.querySelector(selector);
+    if (!el) return;
+    el.classList.add('dodge-anim');
+    setTimeout(() => el.classList.remove('dodge-anim'), 500);
+}
+
+function playBlockAnimation(selector) {
+    const el = document.querySelector(selector);
+    if (!el) return;
+    el.classList.add('block-anim');
+    setTimeout(() => el.classList.remove('block-anim'), 500);
+}
+
+function playGuardAnimation(selector) {
+    const el = document.querySelector(selector);
+    if (!el) return;
+    el.classList.add('guard-anim');
+    setTimeout(() => el.classList.remove('guard-anim'), 2000);
+}
+
+function spawnWordPopup(selector, word, type) {
+    const el = document.querySelector(selector);
+    if (!el) return;
+    el.style.position = 'relative';
+    const popup = document.createElement('div');
+    popup.className = 'combat-word-popup ' + type;
+    popup.textContent = word;
+    el.appendChild(popup);
+    setTimeout(() => popup.remove(), 1000);
+}
+
+// Phase 3B: Ability VFX
+function spawnAbilityVFX(selector, element, abilityId, events) {
+    const el = document.querySelector(selector);
+    if (!el) return;
+    el.style.position = 'relative';
+    const vfx = document.createElement('div');
+    let vfxCls = 'ability-vfx';
+    if (events && events.some(e => e.includes('poisoned'))) vfxCls += ' ability-vfx-poison';
+    else if (events && events.some(e => e.includes('healed'))) vfxCls += ' ability-vfx-heal';
+    else if (element === 'fire') vfxCls += ' ability-vfx-fire';
+    else if (element === 'ice') vfxCls += ' ability-vfx-ice';
+    else if (element === 'shadow') vfxCls += ' ability-vfx-shadow';
+    else if (element === 'holy' || abilityId === 'arcane_bolt') vfxCls += ' ability-vfx-holy';
+    else vfxCls += ' ability-vfx-fire';
+    vfx.className = vfxCls;
+    el.appendChild(vfx);
+    setTimeout(() => vfx.remove(), 1000);
+}
+
+// Phase 3C: Status effect badge updater
+function updateStatusEffectBadges(playerData, enemyData) {
+    const playerArt = document.querySelector('.player-art-img');
+    const enemyArt = document.querySelector('.enemy-art-img');
+    if (playerArt) {
+        playerArt.classList.remove('has-poison', 'has-stun', 'has-atk-buff', 'has-def-buff');
+        if ((playerData.debuffs || []).some(d => d.name === 'Poison')) playerArt.classList.add('has-poison');
+        if (playerData.stunned) playerArt.classList.add('has-stun');
+        if ((playerData.buffs || []).some(b => b.stat === 'atk')) playerArt.classList.add('has-atk-buff');
+        if ((playerData.buffs || []).some(b => b.stat === 'def')) playerArt.classList.add('has-def-buff');
+    }
+    if (enemyArt) {
+        enemyArt.classList.remove('has-poison', 'has-stun', 'has-atk-buff', 'has-def-buff');
+        if ((enemyData.debuffs || []).some(d => d.name === 'Poison')) enemyArt.classList.add('has-poison');
+        if ((enemyData.buffs || []).some(b => b.stat === 'atk')) enemyArt.classList.add('has-atk-buff');
+        if ((enemyData.buffs || []).some(b => b.stat === 'def')) enemyArt.classList.add('has-def-buff');
+    }
+}
+
+// Phase 3D: Stance reveal
+function showStanceReveal(selector, stance) {
+    const el = document.querySelector(selector);
+    if (!el) return;
+    el.style.position = 'relative';
+    const stanceIcons = { aggressive: '\u2694\uFE0F', balanced: '\uD83D\uDEE1\uFE0F', defensive: '\uD83C\uDFF0', evasive: '\uD83D\uDCA8' };
+    const reveal = document.createElement('div');
+    reveal.className = 'stance-reveal';
+    reveal.textContent = (stanceIcons[stance] || '') + ' ' + stance.toUpperCase();
+    el.appendChild(reveal);
+    setTimeout(() => reveal.remove(), 1500);
+}
+
+// Phase 2A: Enemy damage preview
+function getEnemyDamagePreview() {
+    if (!activeCombat) return '';
+    const enemy = activeCombat.enemy;
+    const enemyAtk = enemy.atk || enemy.attack || 0;
+    if (!enemyAtk) return '';
+    const intent = activeCombat.intent;
+    const stanceMod = intent?.stanceHint === 'aggressive' ? 1.3 : intent?.stanceHint === 'defensive' ? 0.7 : 1.0;
+    const playerDef = (state.agent?.def || 5) + (state.agent?.equipBonuses?.def || 0);
+    const defMod = selectedStance === 'defensive' ? 1.4 : selectedStance === 'evasive' ? 0.9 : selectedStance === 'aggressive' ? 0.8 : 1.0;
+    const effDef = playerDef * defMod * 0.85;
+    const raw = enemyAtk * stanceMod;
+    const minDmg = Math.max(1, Math.floor((raw * 0.9) - effDef));
+    const maxDmg = Math.max(1, Math.floor(raw * 1.1));
+    return '~' + minDmg + '-' + maxDmg + ' incoming';
+}
+
+// Phase 2B: Combo notification
+function showComboNotification(combo) {
+    if (!combo) return;
+    const div = document.createElement('div');
+    div.className = 'combo-notification';
+    const iconEl = document.createElement('div');
+    iconEl.className = 'combo-icon';
+    iconEl.textContent = combo.icon;
+    const nameEl = document.createElement('div');
+    nameEl.className = 'combo-name';
+    nameEl.textContent = combo.name;
+    const descEl = document.createElement('div');
+    descEl.className = 'combo-desc';
+    descEl.textContent = combo.description;
+    div.appendChild(iconEl);
+    div.appendChild(nameEl);
+    div.appendChild(descEl);
+    document.body.appendChild(div);
+    setTimeout(() => div.remove(), 3000);
+}
+
+// ============ Phase 1F: Procedural Web Audio Engine ============
+const combatAudio = {
+    ctx: null,
+    masterGain: null,
+    muted: false,
+    initialized: false,
+};
+
+function initCombatAudio() {
+    if (combatAudio.initialized) return;
+    try {
+        combatAudio.ctx = new (window.AudioContext || window.webkitAudioContext)();
+        combatAudio.masterGain = combatAudio.ctx.createGain();
+        combatAudio.masterGain.gain.value = 0.3;
+        combatAudio.masterGain.connect(combatAudio.ctx.destination);
+        combatAudio.initialized = true;
+    } catch (e) { /* Audio not supported */ }
+}
+
+function toggleCombatMute() {
+    combatAudio.muted = !combatAudio.muted;
+    if (combatAudio.masterGain) {
+        combatAudio.masterGain.gain.value = combatAudio.muted ? 0 : 0.3;
+    }
+    const btn = document.querySelector('.combat-mute-btn');
+    if (btn) btn.textContent = combatAudio.muted ? '\uD83D\uDD07' : '\uD83D\uDD0A';
+}
+
+function playCombatSound(type) {
+    if (!combatAudio.ctx || combatAudio.muted) return;
+    const ctx = combatAudio.ctx;
+    const now = ctx.currentTime;
+    const master = combatAudio.masterGain;
+
+    switch (type) {
+        case 'hit_light': {
+            const bufferSize = ctx.sampleRate * 0.08;
+            const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / bufferSize);
+            const src = ctx.createBufferSource(); src.buffer = buffer;
+            const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 2000; bp.Q.value = 1;
+            src.connect(bp); bp.connect(master); src.start(now); break;
+        }
+        case 'hit_heavy': {
+            const osc = ctx.createOscillator(); osc.type = 'sine';
+            osc.frequency.setValueAtTime(80, now); osc.frequency.exponentialRampToValueAtTime(40, now + 0.15);
+            const g = ctx.createGain(); g.gain.setValueAtTime(0.5, now); g.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+            osc.connect(g); g.connect(master); osc.start(now); osc.stop(now + 0.2);
+            const buf = ctx.createBuffer(1, ctx.sampleRate * 0.1, ctx.sampleRate);
+            const d = buf.getChannelData(0);
+            for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / d.length);
+            const ns = ctx.createBufferSource(); ns.buffer = buf;
+            const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 800;
+            const ng = ctx.createGain(); ng.gain.setValueAtTime(0.3, now); ng.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+            ns.connect(lp); lp.connect(ng); ng.connect(master); ns.start(now); break;
+        }
+        case 'block': {
+            const osc = ctx.createOscillator(); osc.type = 'square';
+            osc.frequency.setValueAtTime(120, now); osc.frequency.exponentialRampToValueAtTime(60, now + 0.1);
+            const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 400;
+            const g = ctx.createGain(); g.gain.setValueAtTime(0.3, now); g.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+            osc.connect(lp); lp.connect(g); g.connect(master); osc.start(now); osc.stop(now + 0.12); break;
+        }
+        case 'dodge': {
+            const buf = ctx.createBuffer(1, ctx.sampleRate * 0.12, ctx.sampleRate);
+            const d = buf.getChannelData(0);
+            for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.sin(i / d.length * Math.PI);
+            const ns = ctx.createBufferSource(); ns.buffer = buf;
+            const bp = ctx.createBiquadFilter(); bp.type = 'bandpass';
+            bp.frequency.setValueAtTime(400, now); bp.frequency.exponentialRampToValueAtTime(4000, now + 0.12); bp.Q.value = 2;
+            const g = ctx.createGain(); g.gain.setValueAtTime(0.2, now); g.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+            ns.connect(bp); bp.connect(g); g.connect(master); ns.start(now); break;
+        }
+        case 'ability_fire': {
+            const osc = ctx.createOscillator(); osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(200, now); osc.frequency.exponentialRampToValueAtTime(800, now + 0.2);
+            const g = ctx.createGain(); g.gain.setValueAtTime(0.2, now); g.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+            osc.connect(g); g.connect(master); osc.start(now); osc.stop(now + 0.25); break;
+        }
+        case 'ability_ice': {
+            const osc = ctx.createOscillator(); osc.type = 'sine';
+            osc.frequency.setValueAtTime(2000, now); osc.frequency.exponentialRampToValueAtTime(1200, now + 0.2);
+            const lfo = ctx.createOscillator(); lfo.frequency.value = 8;
+            const lfoGain = ctx.createGain(); lfoGain.gain.value = 50;
+            lfo.connect(lfoGain); lfoGain.connect(osc.frequency);
+            const g = ctx.createGain(); g.gain.setValueAtTime(0.15, now); g.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+            osc.connect(g); g.connect(master); osc.start(now); lfo.start(now); osc.stop(now + 0.25); lfo.stop(now + 0.25); break;
+        }
+        case 'ability_shadow': {
+            const osc1 = ctx.createOscillator(); osc1.type = 'sine'; osc1.frequency.value = 80;
+            const osc2 = ctx.createOscillator(); osc2.type = 'sine'; osc2.frequency.value = 83;
+            const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.setValueAtTime(200, now);
+            lp.frequency.exponentialRampToValueAtTime(800, now + 0.3); lp.Q.value = 8;
+            const g = ctx.createGain(); g.gain.setValueAtTime(0.2, now); g.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+            osc1.connect(lp); osc2.connect(lp); lp.connect(g); g.connect(master);
+            osc1.start(now); osc2.start(now); osc1.stop(now + 0.35); osc2.stop(now + 0.35); break;
+        }
+        case 'ability_holy': {
+            [523.25, 659.25, 783.99].forEach((freq) => {
+                const osc = ctx.createOscillator(); osc.type = 'sine'; osc.frequency.value = freq;
+                const g = ctx.createGain(); g.gain.setValueAtTime(0, now); g.gain.linearRampToValueAtTime(0.12, now + 0.05);
+                g.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+                osc.connect(g); g.connect(master); osc.start(now); osc.stop(now + 0.4);
+            }); break;
+        }
+        case 'victory': {
+            [261.63, 329.63, 392, 523.25].forEach((freq, i) => {
+                const osc = ctx.createOscillator(); osc.type = 'triangle'; osc.frequency.value = freq;
+                const g = ctx.createGain(); g.gain.setValueAtTime(0, now + i * 0.15);
+                g.gain.linearRampToValueAtTime(0.15, now + i * 0.15 + 0.02);
+                g.gain.exponentialRampToValueAtTime(0.01, now + i * 0.15 + 0.3);
+                osc.connect(g); g.connect(master); osc.start(now + i * 0.15); osc.stop(now + i * 0.15 + 0.3);
+            }); break;
+        }
+        case 'defeat': {
+            [311.13, 261.63, 207.65, 174.61].forEach((freq, i) => {
+                const osc = ctx.createOscillator(); osc.type = 'sawtooth'; osc.frequency.value = freq;
+                const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 600;
+                const g = ctx.createGain(); g.gain.setValueAtTime(0, now + i * 0.2);
+                g.gain.linearRampToValueAtTime(0.12, now + i * 0.2 + 0.02);
+                g.gain.exponentialRampToValueAtTime(0.01, now + i * 0.2 + 0.4);
+                osc.connect(lp); lp.connect(g); g.connect(master); osc.start(now + i * 0.2); osc.stop(now + i * 0.2 + 0.4);
+            }); break;
+        }
+        case 'confirm': {
+            const osc = ctx.createOscillator(); osc.type = 'sine';
+            osc.frequency.setValueAtTime(800, now); osc.frequency.exponentialRampToValueAtTime(400, now + 0.08);
+            const g = ctx.createGain(); g.gain.setValueAtTime(0.2, now); g.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+            osc.connect(g); g.connect(master); osc.start(now); osc.stop(now + 0.1); break;
+        }
+        case 'timer_tick': {
+            const freq = 600 + (15 - combatTimer) * 80;
+            const osc = ctx.createOscillator(); osc.type = 'square'; osc.frequency.value = Math.min(freq, 2000);
+            const g = ctx.createGain(); g.gain.setValueAtTime(0.08, now); g.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+            osc.connect(g); g.connect(master); osc.start(now); osc.stop(now + 0.05); break;
+        }
+        case 'stance_select': {
+            const osc = ctx.createOscillator(); osc.type = 'sine'; osc.frequency.value = 1200;
+            const g = ctx.createGain(); g.gain.setValueAtTime(0.1, now); g.gain.exponentialRampToValueAtTime(0.01, now + 0.04);
+            osc.connect(g); g.connect(master); osc.start(now); osc.stop(now + 0.04); break;
+        }
+    }
+}
+
+function playSoundsForResolution(resolution) {
+    if (!combatAudio.ctx || combatAudio.muted) return;
+    const events = resolution.events || [];
+    let soundDelay = 0;
+    const stagger = 120;
+
+    events.forEach(evt => {
+        let sound = null;
+        if (evt === 'critical') sound = 'hit_heavy';
+        else if (evt === 'dodged') sound = 'dodge';
+        else if (evt === 'blocked') sound = 'block';
+        else if (evt === 'guard_surge') sound = 'block';
+        else if (evt.includes('counter') || evt.includes('riposte')) sound = 'hit_light';
+        else if (evt.includes('poisoned')) sound = 'ability_shadow';
+        else if (evt.includes('healed')) sound = 'ability_holy';
+        else if (evt.includes('stunned')) sound = 'hit_heavy';
+        else if (evt.includes('elemental_burst')) sound = 'ability_fire';
+
+        if (sound) {
+            setTimeout(() => playCombatSound(sound), soundDelay);
+            soundDelay += stagger;
+        }
+    });
+
+    if (soundDelay === 0) {
+        if (resolution.playerDamageDealt > 0) {
+            setTimeout(() => playCombatSound('hit_light'), 0);
+            soundDelay += stagger;
+        }
+        if (resolution.playerDamageTaken > 0 || resolution.enemyDamageDealt > 0) {
+            setTimeout(() => playCombatSound('hit_light'), soundDelay);
+        }
+    }
+}
+
 function renderStatusEffects(buffs, debuffs) {
     const effectIcons = {
         'ATK Boost': '⚔️', 'Enrage': '🔥', 'Shield Wall': '🛡️',
@@ -2623,14 +2970,17 @@ function showTacticalCombat(combatData) {
     activeCombat = combatData;
     combatTimer = 15;
     combatLogHtml = ''; // Reset log for new combat
-    
+
+    // Init audio on first combat
+    initCombatAudio();
+
     // Hide old combat overlay
     const oldOverlay = document.getElementById('combatOverlay');
     if (oldOverlay) oldOverlay.classList.add('hidden');
-    
+
     // Create tactical combat UI
     renderTacticalCombatUI();
-    
+
     // Start countdown timer
     startCombatTimer();
 }
@@ -2732,7 +3082,7 @@ function renderTacticalCombatUI() {
 
     const html = `
         <div class="tactical-arena" id="tacticalArena" style="${bgStyle}">
-<!-- close btn removed -->
+            <button class="combat-mute-btn" onclick="toggleCombatMute()">${combatAudio.muted ? '\uD83D\uDD07' : '\uD83D\uDD0A'}</button>
             
             <!-- VS Row: Player left, Round center, Enemy right -->
             <div class="vs-row">
@@ -2772,6 +3122,8 @@ function renderTacticalCombatUI() {
                         <div class="hp-text">${enemy.hp} / ${enemy.maxHp} HP</div>
                     </div>
                     <div class="status-effects-row" id="enemyStatusEffects">${renderStatusEffects(enemy.buffs || [], enemy.debuffs || [])}</div>
+                    ${activeCombat.intent ? '<div class="enemy-intent">' + (activeCombat.intent.flavorText || 'The enemy watches...') + '</div>' : ''}
+                    <div class="enemy-dmg-preview" id="enemyDmgPreview">${getEnemyDamagePreview()}</div>
                 </div>
             </div>
             
@@ -2818,8 +3170,8 @@ function renderTacticalCombatUI() {
                     ${renderAbilityButtons(agent.abilities, agent.stamina)}
                     <button class="action-btn" onclick="selectAction('guard', null)">
                         <span class="action-icon">🛡️</span>
-                        <span class="action-name">Guard</span>
-                        <span class="action-cost">+2 STA, +50% DEF</span>
+                        <span class="action-name">Guard Surge</span>
+                        <span class="action-cost">+5 STA, +50% DEF, Counter</span>
                     </button>
                     ${renderConsumableButton(agent.consumables)}
                 </div>
@@ -2849,20 +3201,25 @@ function renderTacticalCombatUI() {
 
 function renderAbilityButtons(abilities, currentStamina) {
     if (!abilities || abilities.length === 0) return '';
-    
+    const OVEREXERTION_MAX = 2;
+
     return abilities.map(ability => {
-        const canUse = ability.cooldown === 0 && currentStamina >= ability.staminaCost;
+        const canAfford = currentStamina >= ability.staminaCost;
+        const canOverexert = !canAfford && ability.cooldown === 0 && (currentStamina + OVEREXERTION_MAX) >= ability.staminaCost;
+        const canUse = (canAfford || canOverexert) && ability.cooldown === 0;
         const disabled = !canUse ? 'disabled' : '';
-        const cooldownText = ability.cooldown > 0 ? `CD: ${ability.cooldown}` : `${ability.staminaCost} STA`;
-        
-        return `
-            <button class="action-btn ability-btn ${disabled}" onclick="selectAction('ability', '${ability.id}')" ${disabled}>
-                <span class="action-icon">💥</span>
-                <span class="action-name">${ability.name}</span>
-                <span class="action-cost">${cooldownText}</span>
-                ${ability.cooldown > 0 ? '<span class="cooldown-overlay"></span>' : ''}
-            </button>
-        `;
+        const cooldownText = ability.cooldown > 0 ? 'CD: ' + ability.cooldown : ability.staminaCost + ' STA';
+        const overexertClass = canOverexert ? ' overexert' : '';
+        const deficit = canOverexert ? ability.staminaCost - currentStamina : 0;
+        const overexertWarning = canOverexert ? '<span class="overexert-warning">OVEREXERT: -' + (deficit * 5) + '% HP</span>' : '';
+
+        return '<button class="action-btn ability-btn' + overexertClass + ' ' + disabled + '" onclick="selectAction(\'ability\', \'' + ability.id + '\')" ' + disabled + '>'
+            + '<span class="action-icon">\uD83D\uDCA5</span>'
+            + '<span class="action-name">' + ability.name + '</span>'
+            + '<span class="action-cost">' + cooldownText + '</span>'
+            + overexertWarning
+            + (ability.cooldown > 0 ? '<span class="cooldown-overlay"></span>' : '')
+            + '</button>';
     }).join('');
 }
 
@@ -2884,48 +3241,67 @@ let selectedAction = null;
 
 function selectStance(stance) {
     selectedStance = stance;
-    
+    playCombatSound('stance_select');
+
     // Update UI
     document.querySelectorAll('.stance-btn').forEach(btn => {
         btn.classList.remove('selected');
     });
-    document.querySelector(`[data-stance="${stance}"]`)?.classList.add('selected');
-    
+    document.querySelector('[data-stance="' + stance + '"]')?.classList.add('selected');
+
+    // Update enemy damage preview when stance changes
+    const edmPreview = document.getElementById('enemyDmgPreview');
+    if (edmPreview) edmPreview.textContent = getEnemyDamagePreview();
+
     updateConfirmButton();
 }
 
 function selectAction(actionType, abilityId, itemCode) {
     selectedAction = { type: actionType };
-    if (abilityId) {
-        selectedAction.abilityId = abilityId;
-    }
-    if (itemCode) {
-        selectedAction.itemCode = itemCode;
-    }
-    
+    if (abilityId) selectedAction.abilityId = abilityId;
+    if (itemCode) selectedAction.itemCode = itemCode;
+    playCombatSound('stance_select');
+
     // Update UI
     document.querySelectorAll('.action-btn').forEach(btn => {
         btn.classList.remove('selected');
     });
     event.target.closest('.action-btn')?.classList.add('selected');
-    
+
     updateConfirmButton();
 }
 
 function updateConfirmButton() {
     const btn = document.getElementById('confirmCombatBtn');
+    if (!btn) return;
+
+    btn.classList.remove('has-stance', 'has-action', 'ready');
 
     if (selectedStance && selectedAction) {
         btn.disabled = false;
         btn.classList.add('ready');
-
-        // Put damage preview on the button
         const preview = getDamagePreview();
-        btn.innerHTML = preview ? `⚔️ ${preview}` : '⚔️';
+        // Build button content safely
+        btn.textContent = '';
+        const sword = document.createTextNode('\u2694\uFE0F ');
+        btn.appendChild(sword);
+        if (preview) {
+            const previewSpan = document.createElement('span');
+            previewSpan.className = 'dmg-preview';
+            previewSpan.textContent = preview;
+            btn.appendChild(previewSpan);
+        }
+    } else if (selectedStance) {
+        btn.disabled = true;
+        btn.classList.add('has-stance');
+        btn.textContent = '\u2694\uFE0F';
+    } else if (selectedAction) {
+        btn.disabled = true;
+        btn.classList.add('has-action');
+        btn.textContent = '\u2694\uFE0F';
     } else {
         btn.disabled = true;
-        btn.classList.remove('ready');
-        btn.innerHTML = '⚔️';
+        btn.textContent = '\u2694\uFE0F';
     }
 }
 
@@ -2946,9 +3322,9 @@ function getDamagePreview() {
     };
     const mod = stanceMods[selectedStance] || stanceMods.balanced;
     
-    if (selectedAction.type === 'flee') return '🏃 Escape attempt';
-    if (selectedAction.type === 'guard') return '🛡️ +50% DEF, recover 2 STA';
-    if (selectedAction.type === 'consumable') return '🧪 Heal 30% HP';
+    if (selectedAction.type === 'flee') return '\uD83C\uDFC3 Escape attempt';
+    if (selectedAction.type === 'guard') return '\uD83D\uDEE1\uFE0F Guard Surge \u2014 +5 STA, +50% DEF, Counter';
+    if (selectedAction.type === 'consumable') return '\uD83E\uDDEA Heal 30% HP';
     
     // Action multiplier
     let actionMult = 1.0;
@@ -2973,20 +3349,32 @@ function getDamagePreview() {
 
 function startCombatTimer() {
     if (combatTimeout) clearInterval(combatTimeout);
-    
+    const arena = document.getElementById('tacticalArena');
+
     combatTimeout = setInterval(() => {
         combatTimer--;
         const timerEl = document.getElementById('roundTimer');
         if (timerEl) {
-            timerEl.textContent = `${combatTimer}s`;
-            if (combatTimer <= 10) {
+            timerEl.textContent = combatTimer + 's';
+            // Remove old timer classes
+            timerEl.classList.remove('warning', 'urgent', 'critical');
+            if (arena) arena.classList.remove('timer-urgent', 'timer-critical');
+
+            if (combatTimer <= 3) {
+                timerEl.classList.add('critical');
+                if (arena) arena.classList.add('timer-critical');
+                playCombatSound('timer_tick');
+            } else if (combatTimer <= 5) {
                 timerEl.classList.add('urgent');
+                if (arena) arena.classList.add('timer-urgent');
+                playCombatSound('timer_tick');
+            } else if (combatTimer <= 10) {
+                timerEl.classList.add('warning');
             }
         }
-        
+
         if (combatTimer <= 0) {
             clearInterval(combatTimeout);
-            // Auto-submit defensive + basic attack on timeout
             selectedStance = 'defensive';
             selectedAction = { type: 'basic_attack' };
             confirmCombatAction();
@@ -2996,13 +3384,17 @@ function startCombatTimer() {
 
 async function confirmCombatAction() {
     if (!selectedStance || !selectedAction || !activeCombat) return;
-    
+
     clearInterval(combatTimeout);
-    
+    playCombatSound('confirm');
+
     const btn = document.getElementById('confirmCombatBtn');
     btn.disabled = true;
-    btn.textContent = '⚔️ ...';
-    
+    btn.classList.add('slamming');
+    btn.classList.remove('ready');
+    btn.textContent = '\u2694\uFE0F ...';
+    setTimeout(() => btn.classList.remove('slamming'), 300);
+
     try {
         const res = await fetch(`${API}/api/combat/${activeCombat.combatId}/action`, {
             method: 'POST',
@@ -3075,40 +3467,127 @@ function restoreCombatLog() {
     if (log && combatLogHtml) log.innerHTML = combatLogHtml;
 }
 
-function animateRoundResolution(data) {
+async function animateRoundResolution(data) {
     const resolution = data.resolution || {};
     const events = resolution.events || [];
-    
-    // 1. Show the round log entry
+    const stateData = data.state || {};
+    const player = stateData.player || {};
+    const enemy = stateData.enemy || {};
+    const hasCrit = events.includes('critical');
+    const hasDodge = events.includes('dodged');
+    const hasBlock = events.includes('blocked');
+    const hasGuardSurge = events.includes('guard_surge');
+    const enemyElement = enemy.element || activeCombat?.enemy?.element || 'none';
+    const playerElement = activeCombat?.agent?.element || 'none';
+    const turnOrder = resolution.turnOrder || 'simultaneous';
+
+    // 1. Show round log entry (immediate)
     showRoundResolution(data);
-    
-    // Check for feint reveal — show enemy's next stance
-    const feintEvent = events.find(e => e.startsWith('feint_reveal:'));
-    if (feintEvent) {
-        const revealedStance = feintEvent.split(':')[1];
-        const stanceEl = document.querySelector('.enemy-stance');
-        if (stanceEl) {
-            const stanceIcons = { aggressive: '⚔️', balanced: '🛡️', defensive: '🏰', evasive: '💨' };
-            stanceEl.innerHTML = `👁️ Next Stance: <strong style="color:#fbbf24">${stanceIcons[revealedStance] || ''} ${revealedStance}</strong>`;
-            stanceEl.style.color = '#fbbf24';
+
+    // 2. Show combo notification if triggered
+    if (data.activeCombo) {
+        showComboNotification(data.activeCombo);
+    }
+
+    // 3. Stance reveal — show enemy stance briefly
+    await delay(200);
+    showStanceReveal('.tactical-enemy', resolution.enemyStance);
+    await delay(400);
+
+    // Play resolution sounds
+    playSoundsForResolution(resolution);
+
+    // 4. Choreograph attacks based on turn order
+    async function animatePlayerAttack() {
+        const dmg = resolution.playerDamageDealt || 0;
+        const isAbility = resolution.playerAction?.type === 'ability';
+        if (resolution.playerAction?.type === 'guard') {
+            playGuardAnimation('.tactical-player');
+            spawnWordPopup('.tactical-player', 'GUARD', 'guard');
+            if (hasGuardSurge) {
+                const guardCounter = events.find(e => e.startsWith('guard_counter:'));
+                if (guardCounter) {
+                    const cDmg = parseInt(guardCounter.split(':')[1]) || 0;
+                    await delay(300);
+                    spawnWordPopup('.tactical-enemy', 'COUNTER', 'counter');
+                    spawnTacticalDmg('.tactical-enemy', cDmg, { isCrit: false, element: playerElement, type: 'normal' });
+                    applyHitEffect('.tactical-enemy', playerElement, false);
+                    applyScreenShake(false, 'enemy');
+                }
+            }
+            return;
+        }
+        if (dmg > 0) {
+            if (isAbility) spawnAbilityVFX('.tactical-enemy', playerElement, resolution.playerAction.abilityId, events);
+            applyHitEffect('.tactical-enemy', playerElement, hasCrit);
+            applyScreenShake(hasCrit, 'enemy');
+            spawnTacticalDmg('.tactical-enemy', dmg, { isCrit: hasCrit, element: playerElement, type: 'normal' });
+        }
+        if (events.includes('riposte_counter')) {
+            await delay(200);
+            spawnWordPopup('.tactical-player', 'RIPOSTE', 'riposte');
         }
     }
-    
-    // 2. Animate HP bar changes smoothly
-    const state = data.state || {};
-    const player = state.player || {};
-    const enemy = state.enemy || {};
-    
-    // Animate enemy HP
+
+    async function animateEnemyAttack() {
+        const dmg = resolution.enemyDamageDealt || resolution.playerDamageTaken || 0;
+        if (hasDodge) {
+            playDodgeAnimation('.tactical-player');
+            spawnWordPopup('.tactical-player', 'DODGE', 'dodge');
+            playCombatSound('dodge');
+            if (events.includes('counter')) {
+                await delay(300);
+                spawnWordPopup('.tactical-enemy', 'COUNTER', 'counter');
+                const counterDmg = resolution.playerDamageDealt || 0;
+                if (counterDmg > 0) {
+                    spawnTacticalDmg('.tactical-enemy', counterDmg, { isCrit: false, element: playerElement, type: 'normal' });
+                    applyHitEffect('.tactical-enemy', playerElement, false);
+                }
+            }
+            return;
+        }
+        if (hasBlock) {
+            playBlockAnimation('.tactical-player');
+            spawnWordPopup('.tactical-player', 'BLOCKED', 'block');
+            playCombatSound('block');
+            spawnTacticalDmg('.tactical-player', 'BLOCKED', { type: 'block' });
+            return;
+        }
+        if (resolution.enemyAction?.type === 'guard') {
+            playGuardAnimation('.tactical-enemy');
+            return;
+        }
+        if (dmg > 0) {
+            applyHitEffect('.tactical-player', enemyElement, false);
+            applyScreenShake(false, 'player');
+            spawnTacticalDmg('.tactical-player', dmg, { isCrit: false, element: enemyElement, type: 'normal' });
+        }
+    }
+
+    if (turnOrder === 'player_first') {
+        await animatePlayerAttack();
+        await delay(500);
+        await animateEnemyAttack();
+    } else if (turnOrder === 'enemy_first') {
+        await animateEnemyAttack();
+        await delay(500);
+        await animatePlayerAttack();
+    } else {
+        // simultaneous with slight stagger
+        animatePlayerAttack();
+        await delay(200);
+        await animateEnemyAttack();
+    }
+
+    // 5. Animate HP/stamina bar changes (300ms after attacks)
+    await delay(300);
     const enemyHpBar = document.querySelector('.tactical-enemy .hp-bar-fill');
     const enemyHpText = document.querySelector('.tactical-enemy .hp-text');
     if (enemyHpBar && enemy.maxHp) {
         const pct = Math.max(0, (enemy.hp / enemy.maxHp) * 100);
         enemyHpBar.style.width = pct + '%';
-        if (enemyHpText) enemyHpText.textContent = `${enemy.hp} / ${enemy.maxHp}`;
+        if (enemyHpText) enemyHpText.textContent = enemy.hp + ' / ' + enemy.maxHp;
     }
-    
-    // Animate player HP  
     const playerHpBar = document.querySelector('.tactical-player .hp-bar-fill');
     const playerHpText = document.querySelector('.tactical-player .hp-text');
     if (playerHpBar && player.maxHp) {
@@ -3116,96 +3595,135 @@ function animateRoundResolution(data) {
         playerHpBar.style.width = pct + '%';
         if (pct <= 30) playerHpBar.style.background = 'linear-gradient(90deg, #ff3333, #cc0000)';
         else if (pct <= 60) playerHpBar.style.background = 'linear-gradient(90deg, #fbbf24, #ca8a04)';
-        if (playerHpText) playerHpText.textContent = `${player.hp} / ${player.maxHp} HP`;
+        else playerHpBar.style.background = '';
+        if (playerHpText) playerHpText.textContent = player.hp + ' / ' + player.maxHp + ' HP';
     }
-    
-    // Animate stamina
     const staBar = document.querySelector('.stamina-bar-fill');
     const staText = document.querySelector('.stamina-text');
     if (staBar && player.maxStamina) {
         staBar.style.width = ((player.stamina / player.maxStamina) * 100) + '%';
-        if (staText) staText.textContent = `${player.stamina} / ${player.maxStamina} STA`;
+        if (staText) staText.textContent = player.stamina + ' / ' + player.maxStamina + ' STA';
     }
-    
-    // 3. Flash effects for damage
-    const hasPlayerDmg = events.some(e => e.toLowerCase().includes('you take') || e.toLowerCase().includes('hits you') || e.toLowerCase().includes('damage to you'));
-    const hasEnemyDmg = events.some(e => e.toLowerCase().includes('you deal') || e.toLowerCase().includes('strike') || e.toLowerCase().includes('hit'));
-    const hasCrit = events.some(e => e.toLowerCase().includes('critical'));
-    
-    if (hasEnemyDmg) {
-        const enemySection = document.querySelector('.tactical-enemy');
-        if (enemySection) { enemySection.classList.add('hit-flash'); setTimeout(() => enemySection.classList.remove('hit-flash'), 600); }
+
+    // 6. Status effect tick animations (400ms after bars)
+    await delay(400);
+    // Show poison tick damage numbers
+    events.forEach(evt => {
+        const poisonMatch = evt.match(/poison_tick_(\d+)/);
+        if (poisonMatch) {
+            const who = evt.includes('enemy') ? '.tactical-enemy' : '.tactical-player';
+            spawnTacticalDmg(who, parseInt(poisonMatch[1]), { type: 'poison' });
+        }
+    });
+
+    // 7. Update status effect badges
+    await delay(200);
+    const playerStatusEl = document.getElementById('playerStatusEffects');
+    if (playerStatusEl) playerStatusEl.textContent = '';
+    const tmpP = document.createElement('span');
+    tmpP.textContent = ''; // Clear first
+    if (playerStatusEl) {
+        const seHtml = renderStatusEffects(player.buffs || [], player.debuffs || []);
+        // Use a safe approach: create a temporary container
+        const tempDiv = document.createElement('div');
+        tempDiv.insertAdjacentHTML('beforeend', seHtml);
+        playerStatusEl.textContent = '';
+        while (tempDiv.firstChild) playerStatusEl.appendChild(tempDiv.firstChild);
     }
-    if (hasPlayerDmg) {
-        const playerSection = document.querySelector('.tactical-player');
-        if (playerSection) { playerSection.classList.add('hit-flash'); setTimeout(() => playerSection.classList.remove('hit-flash'), 600); }
+    const enemyStatusEl = document.getElementById('enemyStatusEffects');
+    if (enemyStatusEl) {
+        const seHtml = renderStatusEffects(enemy.buffs || [], enemy.debuffs || []);
+        const tempDiv = document.createElement('div');
+        tempDiv.insertAdjacentHTML('beforeend', seHtml);
+        enemyStatusEl.textContent = '';
+        while (tempDiv.firstChild) enemyStatusEl.appendChild(tempDiv.firstChild);
     }
-    if (hasCrit) {
-        const arena = document.getElementById('tacticalArena');
-        if (arena) { arena.classList.add('screen-shake'); setTimeout(() => arena.classList.remove('screen-shake'), 500); }
+    updateStatusEffectBadges(player, enemy);
+
+    // Check for feint reveal
+    const feintEvent = events.find(e => e.startsWith('feint_reveal:'));
+    if (feintEvent) {
+        const revealedStance = feintEvent.split(':')[1];
+        const stanceEl = document.querySelector('.enemy-stance');
+        if (stanceEl) {
+            const stanceIcons = { aggressive: '\u2694\uFE0F', balanced: '\uD83D\uDEE1\uFE0F', defensive: '\uD83C\uDFF0', evasive: '\uD83D\uDCA8' };
+            stanceEl.textContent = '\uD83D\uDC41\uFE0F Next Stance: ' + (stanceIcons[revealedStance] || '') + ' ' + revealedStance;
+            stanceEl.style.color = '#fbbf24';
+        }
     }
-    
-    // 4. Floating damage numbers
-    if (resolution.playerDamageDealt || resolution.playerDamage) {
-        spawnTacticalDmg('.tactical-enemy', resolution.playerDamageDealt || resolution.playerDamage, hasCrit);
-    }
-    if (resolution.enemyDamageDealt || resolution.enemyDamage) {
-        spawnTacticalDmg('.tactical-player', resolution.enemyDamageDealt || resolution.enemyDamage, false);
-    }
-    
-    // 5. After animation, check status or go to next round
-    const delay = 2500;
+
+    // 8. Transition to next round or end screen
+    await delay(800);
     if (data.status === 'victory') {
-        setTimeout(() => showCombatVictory(data), delay);
+        showCombatVictory(data);
     } else if (data.status === 'defeat') {
-        setTimeout(() => showCombatDefeat(data), delay);
+        showCombatDefeat(data);
     } else if (data.status === 'fled') {
-        setTimeout(() => { showMessage('You escaped!', 'info'); closeTacticalCombat(); }, delay);
+        showMessage('You escaped!', 'info');
+        closeTacticalCombat();
     } else {
-        // Save log, update state, re-render, restore log
-        setTimeout(() => {
-            saveCombatLog();
-            activeCombat.round = data.round;
-            // Merge server state with existing data (preserve name, element, abilities)
-            activeCombat.agent = { 
-                ...activeCombat.agent, 
-                ...data.state.player,
-                abilities: (() => {
-                    const orig = activeCombat.agent?.abilities || [];
-                    const updated = data.state.abilities || [];
-                    return orig.map(a => {
-                        const u = updated.find(x => x.id === a.id);
-                        return u ? { ...a, cooldown: u.cooldown } : a;
-                    });
-                })()
-            };
-            activeCombat.enemy = { 
-                ...activeCombat.enemy, 
-                ...data.state.enemy 
-            };
-            selectedStance = null;
-            selectedAction = null;
-            combatTimer = 15;
-            renderTacticalCombatUI();
-            restoreCombatLog();
-            startCombatTimer();
-        }, delay);
+        saveCombatLog();
+        activeCombat.round = data.round;
+        activeCombat.agent = {
+            ...activeCombat.agent,
+            ...data.state.player,
+            abilities: (() => {
+                const orig = activeCombat.agent?.abilities || [];
+                const updated = data.state.abilities || [];
+                return orig.map(a => {
+                    const u = updated.find(x => x.id === a.id);
+                    return u ? { ...a, cooldown: u.cooldown } : a;
+                });
+            })()
+        };
+        activeCombat.enemy = { ...activeCombat.enemy, ...data.state.enemy };
+        // Preserve intent and combo data
+        if (data.intent) activeCombat.intent = data.intent;
+        selectedStance = null;
+        selectedAction = null;
+        combatTimer = 15;
+        renderTacticalCombatUI();
+        restoreCombatLog();
+        startCombatTimer();
     }
 }
 
-function spawnTacticalDmg(selector, damage, isCrit) {
+function spawnTacticalDmg(selector, value, options) {
     const el = document.querySelector(selector);
-    if (!el || !damage) return;
+    if (!el) return;
+    // Support old API: spawnTacticalDmg(sel, val, isCrit)
+    if (typeof options === 'boolean') options = { isCrit: options };
+    options = options || {};
+    const isCrit = options.isCrit || false;
+    const element = options.element || 'none';
+    const type = options.type || 'normal'; // normal, heal, poison, block
     const dmg = document.createElement('div');
-    dmg.className = 'tactical-floating-dmg' + (isCrit ? ' crit' : '');
-    dmg.textContent = (isCrit ? '💥 ' : '') + '-' + damage;
+    let classes = 'tac-dmg';
+    if (type === 'block') {
+        classes += ' dmg-block';
+        dmg.textContent = 'BLOCKED';
+    } else if (type === 'heal') {
+        classes += ' dmg-heal';
+        dmg.textContent = '+' + value;
+    } else if (type === 'poison') {
+        classes += ' dmg-poison';
+        dmg.textContent = '-' + value;
+    } else if (isCrit) {
+        classes += ' dmg-crit dmg-' + getElementColor(element).cls;
+        dmg.textContent = '\uD83D\uDCA5 -' + value;
+    } else {
+        classes += ' dmg-normal dmg-' + getElementColor(element).cls;
+        dmg.textContent = '-' + value;
+    }
+    dmg.className = classes;
     dmg.style.left = (30 + Math.random() * 40) + '%';
     el.style.position = 'relative';
     el.appendChild(dmg);
-    setTimeout(() => dmg.remove(), 1500);
+    setTimeout(() => dmg.remove(), isCrit ? 1500 : 1200);
 }
 
 function showCombatVictory(data) {
+    playCombatSound('victory');
     let overlay = document.getElementById('tacticalCombatOverlay');
     if (!overlay) {
         overlay = document.createElement('div');
@@ -3215,39 +3733,110 @@ function showCombatVictory(data) {
     }
     overlay.classList.remove('hidden');
     overlay.style.display = 'flex';
-    
-    const { rewards } = data;
-    const xp = rewards?.xpGained || 0;
-    const gold = rewards?.goldGained || 0;
-    const items = rewards?.itemsDropped || [];
-    
-    const xpCapped = rewards?.xpCapped || false;
-    const xpCappedMessage = rewards?.xpCappedMessage || 'This zone holds nothing more for you. Descend deeper...';
+
+    const rewards = data.rewards || {};
+    const xp = rewards.xpGained || 0;
+    const gold = rewards.goldGained || 0;
+    const items = rewards.itemsDropped || [];
+    const xpCapped = rewards.xpCapped || false;
+    const xpCappedMessage = rewards.xpCappedMessage || 'This zone holds nothing more for you. Descend deeper...';
     const enemyName = activeCombat?.enemy?.name || 'The enemy';
     const gateUnlocked = data.gateUnlocked || false;
     const gateMessage = data.gateMessage || '';
-    
-    overlay.innerHTML = `
-        <div class="tactical-arena" style="display:flex;align-items:center;justify-content:center;">
-            <div class="combat-victory-screen">
-                <div class="victory-title">⚔️ VICTORY! ⚔️</div>
-                <div class="victory-subtitle">${enemyName} has been defeated!</div>
-                ${gateUnlocked ? `<div class="reward-item" style="color:var(--gold);font-size:18px;margin:16px 0">🏆 ${gateMessage}</div>` : ''}
-                <div class="victory-rewards">
-                    ${xpCapped ? `<div class="reward-item xp-capped">🚫 ${xpCappedMessage}</div>` : (xp > 0 ? `<div class="reward-item">⭐ +${xp} XP</div>` : '')}
-                    ${gold > 0 ? `<div class="reward-item">💰 +${gold} Gold</div>` : ''}
-                    ${items.length > 0 ? items.map(item => `<div class="reward-item">📦 ${item}</div>`).join('') : ''}
-                </div>
-                <button class="combat-close-final" onclick="closeTacticalCombat()">Continue</button>
-            </div>
-        </div>
-    `;
-    
-    // Refresh agent data
+
+    // Build DOM safely
+    overlay.textContent = '';
+    const arena = document.createElement('div');
+    arena.className = 'tactical-arena victory-bg';
+    arena.style.cssText = 'display:flex;align-items:center;justify-content:center;position:relative;';
+
+    // Confetti
+    const confettiContainer = document.createElement('div');
+    confettiContainer.className = 'confetti-container';
+    const confettiColors = ['#ff6b35', '#ffd700', '#4ade80', '#60a5fa', '#a855f7', '#ff3333', '#fbbf24'];
+    for (let i = 0; i < 40; i++) {
+        const piece = document.createElement('div');
+        piece.className = 'confetti-piece';
+        piece.style.left = Math.random() * 100 + '%';
+        piece.style.background = confettiColors[i % confettiColors.length];
+        piece.style.animationDuration = (2 + Math.random() * 3) + 's';
+        piece.style.animationDelay = (Math.random() * 1.5) + 's';
+        piece.style.width = (6 + Math.random() * 8) + 'px';
+        piece.style.height = (6 + Math.random() * 8) + 'px';
+        confettiContainer.appendChild(piece);
+    }
+    arena.appendChild(confettiContainer);
+
+    const screen = document.createElement('div');
+    screen.className = 'combat-victory-screen';
+    screen.style.position = 'relative';
+    screen.style.zIndex = '1';
+
+    const title = document.createElement('div');
+    title.className = 'victory-title victory-slide-in';
+    title.textContent = '\u2694\uFE0F VICTORY! \u2694\uFE0F';
+    screen.appendChild(title);
+
+    const subtitle = document.createElement('div');
+    subtitle.className = 'victory-subtitle victory-fade-1';
+    subtitle.textContent = enemyName + ' has been defeated!';
+    screen.appendChild(subtitle);
+
+    if (gateUnlocked) {
+        const gateDiv = document.createElement('div');
+        gateDiv.className = 'reward-item victory-fade-2';
+        gateDiv.style.cssText = 'color:var(--gold);font-size:18px;margin:16px 0';
+        gateDiv.textContent = '\uD83C\uDFC6 ' + gateMessage;
+        screen.appendChild(gateDiv);
+    }
+
+    const rewardsDiv = document.createElement('div');
+    rewardsDiv.className = 'victory-rewards';
+    let fadeIdx = gateUnlocked ? 3 : 2;
+
+    if (xpCapped) {
+        const capDiv = document.createElement('div');
+        capDiv.className = 'reward-item xp-capped victory-fade-' + fadeIdx;
+        capDiv.textContent = '\uD83D\uDEAB ' + xpCappedMessage;
+        rewardsDiv.appendChild(capDiv);
+        fadeIdx++;
+    } else if (xp > 0) {
+        const xpDiv = document.createElement('div');
+        xpDiv.className = 'reward-item victory-fade-' + fadeIdx;
+        xpDiv.textContent = '\u2B50 +' + xp + ' XP';
+        rewardsDiv.appendChild(xpDiv);
+        fadeIdx++;
+    }
+    if (gold > 0) {
+        const goldDiv = document.createElement('div');
+        goldDiv.className = 'reward-item victory-fade-' + Math.min(fadeIdx, 6);
+        goldDiv.textContent = '\uD83D\uDCB0 +' + gold + ' Gold';
+        rewardsDiv.appendChild(goldDiv);
+        fadeIdx++;
+    }
+    items.forEach(item => {
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'reward-item victory-fade-' + Math.min(fadeIdx, 6);
+        itemDiv.textContent = '\uD83D\uDCE6 ' + item;
+        rewardsDiv.appendChild(itemDiv);
+        fadeIdx++;
+    });
+    screen.appendChild(rewardsDiv);
+
+    const continueBtn = document.createElement('button');
+    continueBtn.className = 'combat-close-final victory-continue-btn';
+    continueBtn.textContent = 'Continue';
+    continueBtn.onclick = closeTacticalCombat;
+    screen.appendChild(continueBtn);
+
+    arena.appendChild(screen);
+    overlay.appendChild(arena);
+
     setTimeout(() => refreshAgent(), 500);
 }
 
 function showCombatDefeat(data) {
+    playCombatSound('defeat');
     let overlay = document.getElementById('tacticalCombatOverlay');
     if (!overlay) {
         overlay = document.createElement('div');
@@ -3257,42 +3846,75 @@ function showCombatDefeat(data) {
     }
     overlay.classList.remove('hidden');
     overlay.style.display = 'flex';
-    
+
     const permadeath = data.permadeath || false;
-    
-    let html = `
-        <div class="tactical-arena" style="display:flex;align-items:center;justify-content:center;">
-        <div class="combat-defeat-screen">
-            <div class="defeat-title">💀 DEFEATED 💀</div>
-    `;
-    
+    const enemyName = activeCombat?.enemy?.name || 'the enemy';
+
+    overlay.textContent = '';
+    const arena = document.createElement('div');
+    arena.className = 'tactical-arena defeat-bg defeat-desaturate';
+    arena.style.cssText = 'display:flex;align-items:center;justify-content:center;position:relative;';
+
+    const screen = document.createElement('div');
+    screen.className = 'combat-defeat-screen';
+    screen.style.position = 'relative';
+    screen.style.zIndex = '1';
+
+    const title = document.createElement('div');
+    title.className = 'defeat-title defeat-shake-in';
+    title.textContent = '\uD83D\uDC80 DEFEATED \uD83D\uDC80';
+    screen.appendChild(title);
+
     if (permadeath) {
-        html += `
-            <div class="permadeath-message">
-                <div class="permadeath-title">YOUR CHAMPION HAS FALLEN</div>
-                <div class="permadeath-text">${data.message || 'Death is permanent in The Hollows.'}</div>
-                <div class="permadeath-stats">
-                    ${data.finalStats ? `
-                        <div>Champion: ${data.finalStats.name}</div>
-                        <div>Level: ${data.finalStats.level}</div>
-                        <div>Slain by: ${data.finalStats.killedBy}</div>
-                    ` : ''}
-                </div>
-                <button class="combat-close-final" onclick="handlePermadeath()">Create New Champion</button>
-            </div>
-        `;
+        // Pulsing vignette
+        const vignette = document.createElement('div');
+        vignette.className = 'defeat-vignette-pulse';
+        arena.appendChild(vignette);
+
+        const pdMsg = document.createElement('div');
+        pdMsg.className = 'permadeath-message defeat-fade-1';
+        const pdTitle = document.createElement('div');
+        pdTitle.className = 'permadeath-title';
+        pdTitle.textContent = 'YOUR CHAMPION HAS FALLEN';
+        pdMsg.appendChild(pdTitle);
+        const pdText = document.createElement('div');
+        pdText.className = 'permadeath-text';
+        pdText.textContent = data.message || 'Death is permanent in The Hollows.';
+        pdMsg.appendChild(pdText);
+        if (data.finalStats) {
+            const statsDiv = document.createElement('div');
+            statsDiv.className = 'permadeath-stats defeat-fade-2';
+            const s1 = document.createElement('div'); s1.textContent = 'Champion: ' + data.finalStats.name;
+            const s2 = document.createElement('div'); s2.textContent = 'Level: ' + data.finalStats.level;
+            const s3 = document.createElement('div'); s3.textContent = 'Slain by: ' + data.finalStats.killedBy;
+            statsDiv.appendChild(s1); statsDiv.appendChild(s2); statsDiv.appendChild(s3);
+            pdMsg.appendChild(statsDiv);
+        }
+        const pdBtn = document.createElement('button');
+        pdBtn.className = 'combat-close-final defeat-continue-btn';
+        pdBtn.textContent = 'Create New Champion';
+        pdBtn.onclick = handlePermadeath;
+        pdMsg.appendChild(pdBtn);
+        screen.appendChild(pdMsg);
     } else {
-        html += `
-            <div class="defeat-subtitle">You were defeated by ${activeCombat?.enemy?.name || 'the enemy'}</div>
-            <div class="defeat-damage">Took ${data.resolution?.playerDamageTaken || 0} damage</div>
-            <button class="combat-close-final" onclick="closeTacticalCombat()">Continue</button>
-        `;
+        const sub = document.createElement('div');
+        sub.className = 'defeat-subtitle defeat-fade-1';
+        sub.textContent = 'You were defeated by ' + enemyName;
+        screen.appendChild(sub);
+        const dmgInfo = document.createElement('div');
+        dmgInfo.className = 'defeat-damage defeat-fade-2';
+        dmgInfo.textContent = 'Took ' + (data.resolution?.playerDamageTaken || 0) + ' damage';
+        screen.appendChild(dmgInfo);
+        const btn = document.createElement('button');
+        btn.className = 'combat-close-final defeat-continue-btn';
+        btn.textContent = 'Continue';
+        btn.onclick = closeTacticalCombat;
+        screen.appendChild(btn);
     }
-    
-    html += `</div></div>`;
-    overlay.innerHTML = html;
-    
-    // Refresh agent data
+
+    arena.appendChild(screen);
+    overlay.appendChild(arena);
+
     setTimeout(() => refreshAgent(), 500);
 }
 

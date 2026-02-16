@@ -98,6 +98,13 @@ export interface RoundResolution {
   events: string[];
   narrative: string;
   rngLog: any[];
+  activeCombo?: { name: string; icon: string; description: string; effect: { type: string; value: number } } | null;
+}
+
+export interface EnemyIntent {
+  stanceHint: string;
+  actionHint: string;
+  flavorText: string;
 }
 
 export type EncounterType = 'mob' | 'gate_boss' | 'world_boss';
@@ -119,6 +126,9 @@ export interface CombatSession {
   deadlineAt: number;
   playerStanceHistory: Stance[];
   consumablesUsed: string[];
+  enemyIntent?: EnemyIntent;
+  activeCombo?: { name: string; icon: string; description: string; effect: { type: string; value: number } } | null;
+  overexertedLastRound?: boolean;
 }
 
 // Combat configuration constants
@@ -132,7 +142,7 @@ export const COMBAT_CONFIG = {
   BASE_MAX_STAMINA: 10,
   STAMINA_PER_LEVEL: 0.2,
   STAMINA_REGEN_PER_ROUND: 1,
-  GUARD_BONUS_STAMINA: 3,
+  GUARD_BONUS_STAMINA: 5,
 
   // Stances - ITERATION 3: Final balance - middle ground between iter 1 & 2
   AGGRESSIVE_ATK_MOD: 1.35,    // Balanced: less dominant
@@ -169,7 +179,19 @@ export const COMBAT_CONFIG = {
 
   // Guard
   GUARD_DEF_BONUS: 0.50,
+
+  // Overexertion
+  OVEREXERTION_MAX_DEFICIT: 2,
+  OVEREXERTION_SELF_DAMAGE_PERCENT: 0.05,
 };
+
+export const STANCE_COMBOS: { name: string; sequence: Stance[]; icon: string; description: string; effect: { type: string; value: number } }[] = [
+  { name: 'Onslaught', sequence: ['aggressive', 'aggressive', 'balanced'], icon: '🔥', description: '+20% ATK this round', effect: { type: 'atk', value: 20 } },
+  { name: 'Iron Wall', sequence: ['defensive', 'defensive', 'aggressive'], icon: '🏰', description: '+25% ATK this round', effect: { type: 'atk', value: 25 } },
+  { name: 'Phantom Dance', sequence: ['evasive', 'evasive', 'aggressive'], icon: '👻', description: '+20% Crit Chance', effect: { type: 'crit', value: 20 } },
+  { name: 'Second Wind', sequence: ['defensive', 'balanced', 'evasive'], icon: '🌀', description: '+3 Bonus Stamina', effect: { type: 'stamina', value: 3 } },
+  { name: 'Adaptive Stance', sequence: ['balanced', 'aggressive', 'defensive'], icon: '🔄', description: '+25% DEF this round', effect: { type: 'def', value: 25 } },
+];
 
 // Element chart
 const ELEMENT_CHART: Record<ElementType, Record<ElementType, number>> = {
@@ -413,6 +435,9 @@ export function createCombatSession(
     consumablesUsed: [],
   };
 
+  // Compute initial enemy intent for round 1
+  session.enemyIntent = computeEnemyIntent(session.enemyState, []);
+
   activeSessions.set(sessionId, session);
   return session;
 }
@@ -474,6 +499,11 @@ export function submitRoundAction(
   } else {
     session.status = 'awaiting_input';
     session.deadlineAt = Date.now() + COMBAT_CONFIG.ROUND_TIMEOUT_SECONDS * 1000;
+  }
+
+  // Compute enemy intent for next round (if combat continues)
+  if (session.status === 'awaiting_input') {
+    session.enemyIntent = computeEnemyIntent(session.enemyState, session.playerStanceHistory);
   }
 
   activeSessions.set(sessionId, session);
@@ -697,6 +727,89 @@ function selectEnemyAction(enemy: EnemyCombatState): CombatAction {
 }
 
 /**
+ * Compute enemy intent hint for the next round
+ */
+function computeEnemyIntent(enemy: EnemyCombatState, playerStanceHistory: Stance[]): EnemyIntent {
+  // Simulate enemy decision on a shallow copy (no mutation)
+  const enemyCopy = { ...enemy, abilities: enemy.abilities.map(a => ({ ...a })), buffs: [...enemy.buffs], debuffs: [...enemy.debuffs] };
+  const predictedStance = selectEnemyStance(enemyCopy, playerStanceHistory);
+  const predictedAction = selectEnemyAction(enemyCopy);
+
+  // Map to fuzzy hints
+  const stanceHints: Record<string, string> = {
+    aggressive: 'aggressive',
+    defensive: 'defensive',
+    evasive: 'evasive',
+    balanced: 'unknown',
+  };
+  const actionHints: Record<string, string> = {
+    basic_attack: 'attack',
+    ability: 'special',
+    guard: 'defend',
+    flee: 'unknown',
+  };
+
+  // Boss at 30% HP is always readable as aggressive
+  const hpPercent = enemy.hp / enemy.maxHp;
+  const isBossEnraged = enemy.archetype === 'boss' && hpPercent <= 0.30;
+
+  const stanceHint = isBossEnraged ? 'aggressive' : (stanceHints[predictedStance] || 'unknown');
+  const actionHint = actionHints[predictedAction.type] || 'unknown';
+  const flavorText = getIntentFlavorText(enemy.archetype, predictedStance, predictedAction);
+
+  return { stanceHint, actionHint, flavorText };
+}
+
+function getIntentFlavorText(archetype: EnemyArchetype, stance: Stance, _action: CombatAction): string {
+  const texts: Record<EnemyArchetype, Record<string, string[]>> = {
+    brute: {
+      aggressive: ['The brute snarls and raises its weapon high...', 'Muscles tense, preparing to strike...', 'A guttural roar signals incoming fury...'],
+      defensive: ['The brute hunkers down behind thick arms...', 'It shifts into a low, guarded stance...'],
+      evasive: ['The brute shifts its weight, surprisingly nimble...', 'It circles warily, looking for an opening...'],
+      balanced: ['The brute watches you carefully...', 'It holds steady, eyes tracking your movement...'],
+    },
+    guardian: {
+      aggressive: ['The guardian steps forward menacingly...', 'Shield lowered, it prepares to charge...'],
+      defensive: ['The guardian raises its shield wall...', 'It braces behind impenetrable defense...'],
+      evasive: ['The guardian sidesteps, armor clanking...'],
+      balanced: ['The guardian maintains a steady guard...', 'It watches from behind its shield...'],
+    },
+    assassin: {
+      aggressive: ['Blades glint as the assassin coils to strike...', 'The assassin\'s eyes narrow — an attack is coming...'],
+      defensive: ['The assassin retreats into shadow...', 'It pulls back, defensive and wary...'],
+      evasive: ['The assassin dances on light feet...', 'Shadows flicker as it prepares to evade...'],
+      balanced: ['The assassin circles slowly, calculating...', 'Cold eyes measure your every move...'],
+    },
+    caster: {
+      aggressive: ['Dark energy crackles between its fingers...', 'The air hums with gathering power...'],
+      defensive: ['A shimmering ward forms around the caster...', 'It raises arcane barriers...'],
+      evasive: ['The caster blinks, phasing slightly...'],
+      balanced: ['The caster channels quietly, studying you...', 'Runes orbit the caster slowly...'],
+    },
+    boss: {
+      aggressive: ['RAGE BUILDS — a devastating attack is imminent!', 'The ground trembles with building fury...', 'Power surges — prepare yourself!'],
+      defensive: ['The boss pauses, gathering strength...', 'A brief respite as it readies defenses...'],
+      evasive: ['The boss repositions with surprising speed...'],
+      balanced: ['The boss surveys the battlefield...', 'A calculating pause before the storm...'],
+    },
+  };
+
+  const options = texts[archetype]?.[stance] || texts.brute.balanced;
+  return options[Math.floor(Math.random() * options.length)];
+}
+
+function checkForCombo(stanceHistory: Stance[]): typeof STANCE_COMBOS[number] | null {
+  if (stanceHistory.length < 3) return null;
+  const last3 = stanceHistory.slice(-3);
+  for (const combo of STANCE_COMBOS) {
+    if (combo.sequence[0] === last3[0] && combo.sequence[1] === last3[1] && combo.sequence[2] === last3[2]) {
+      return combo;
+    }
+  }
+  return null;
+}
+
+/**
  * Resolve a combat round
  */
 function resolveRound(
@@ -712,6 +825,23 @@ function resolveRound(
 
   const player = session.playerState;
   const enemy = session.enemyState;
+
+  // Check for combo
+  const combo = checkForCombo(session.playerStanceHistory);
+  let comboData: typeof STANCE_COMBOS[number] | null = null;
+  if (combo) {
+    comboData = combo;
+    events.push(`combo:${combo.name}`);
+    // Apply combo buff
+    if (combo.effect.type === 'atk') {
+      player.buffs.push({ id: 'combo_atk', name: combo.name, type: 'buff', stat: 'atk', value: combo.effect.value, duration: 1 });
+    } else if (combo.effect.type === 'def') {
+      player.buffs.push({ id: 'combo_def', name: combo.name, type: 'buff', stat: 'def', value: combo.effect.value, duration: 1 });
+    } else if (combo.effect.type === 'stamina') {
+      player.stamina = Math.min(player.maxStamina, player.stamina + combo.effect.value);
+    }
+    // Crit combo is handled in resolveAttack by checking events
+  }
 
   // Determine turn order
   let turnOrder: 'player_first' | 'enemy_first' | 'simultaneous';
@@ -755,6 +885,7 @@ function resolveRound(
         events,
         narrative,
         rngLog: rng.getRolls(),
+        activeCombo: null,
       };
     } else {
       events.push('flee_failed');
@@ -788,6 +919,7 @@ function resolveRound(
         events,
         narrative,
         rngLog: rng.getRolls(),
+        activeCombo: null,
       };
     }
   }
@@ -821,7 +953,7 @@ function resolveRound(
     tickCooldowns(player);
     tickStatusEffects(player, events);
     tickStatusEffects(enemy, events);
-    regenerateStamina(player, playerAction);
+    regenerateStamina(player, playerAction, session);
     if (player.stunned) {
       const stunEffect = player.buffs.find(b => b.stat === 'stun');
       if (stunEffect) {
@@ -862,6 +994,7 @@ function resolveRound(
       events,
       narrative,
       rngLog: rng.getRolls(),
+      activeCombo: null,
     };
   }
 
@@ -950,13 +1083,23 @@ function resolveRound(
     }
   }
 
+  // Guard counter-attack: if someone guarded and the other attacked
+  if (playerAction.type === 'guard' && enemyAction.type !== 'guard') {
+    const counterDmg = Math.max(1, Math.floor(getEffectiveAtk(player) * 0.5));
+    enemy.hp -= counterDmg;
+    playerDamageDealt += counterDmg;
+    enemyDamageTaken += counterDmg;
+    events.push(`guard_counter:${counterDmg}`);
+    narrative += ` Guard counter for ${counterDmg} damage!`;
+  }
+
   // Apply status effects and cooldowns
   tickCooldowns(player);
   tickStatusEffects(player, events);
   tickStatusEffects(enemy, events);
-  
+
   // Stamina regeneration
-  regenerateStamina(player, playerAction);
+  regenerateStamina(player, playerAction, session);
 
   // Decrement stun from status effects rather than clearing unconditionally
   if (player.stunned) {
@@ -999,6 +1142,7 @@ function resolveRound(
     events,
     narrative,
     rngLog: rng.getRolls(),
+    activeCombo: comboData,
   };
 }
 
@@ -1020,7 +1164,18 @@ function resolveAttack(
 
   // Guard action
   if (attackerAction.type === 'guard') {
-    narr = `${(attacker as any).name || 'You'} take${attacker === defender ? '' : 's'} a defensive stance.`;
+    // Guard grants +50% DEF buff
+    const existingDef = attacker.buffs.find(b => b.stat === 'def' && b.id === 'guard_surge_def');
+    if (existingDef) {
+      existingDef.duration = 1;
+    } else {
+      attacker.buffs.push({
+        id: 'guard_surge_def', name: 'Guard Surge', type: 'buff', stat: 'def',
+        value: 50, duration: 1,
+      });
+    }
+    events.push('guard_surge');
+    narr = `${(attacker as any).name || 'You'} take${attacker === defender ? '' : 's'} a fortified stance!`;
     return { damage: 0, counterDamage: 0, eventList: events, narr };
   }
 
@@ -1376,7 +1531,7 @@ function getEffectiveDef(combatant: PlayerCombatState | EnemyCombatState): numbe
 /**
  * Regenerate stamina
  */
-function regenerateStamina(player: PlayerCombatState, action: CombatAction): void {
+function regenerateStamina(player: PlayerCombatState, action: CombatAction, session?: CombatSession): void {
   // Deduct stamina for abilities FIRST
   if (action.type === 'ability' && action.abilityId) {
     const ability = player.abilities.find(a => a.id === action.abilityId);
@@ -1384,6 +1539,22 @@ function regenerateStamina(player: PlayerCombatState, action: CombatAction): voi
       player.stamina -= ability.staminaCost;
       ability.cooldown = ability.maxCooldown;
     }
+  }
+
+  // Check for overexertion (stamina went negative)
+  if (player.stamina < 0 && session) {
+    const deficit = Math.abs(player.stamina);
+    const selfDamage = Math.floor(player.maxHp * COMBAT_CONFIG.OVEREXERTION_SELF_DAMAGE_PERCENT * deficit);
+    player.hp -= selfDamage;
+    session.overexertedLastRound = true;
+    // Don't regen this round
+    return;
+  }
+
+  // Skip regen if overexerted last round
+  if (session?.overexertedLastRound) {
+    session.overexertedLastRound = false;
+    return;
   }
 
   // Then regenerate
