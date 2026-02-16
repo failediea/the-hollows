@@ -227,6 +227,9 @@ body {
     padding: 6px;
     display: flex;
     flex-direction: column;
+    justify-content: flex-end;
+    display: flex;
+    flex-direction: column;
     gap: 4px;
     font-size: 12px;
 }
@@ -256,7 +259,9 @@ body {
     display: flex;
     gap: 4px;
     padding: 6px;
-    border-top: 1px solid var(--panel-border);
+}
+.chat-section .section-header {
+    border-bottom: none;
 }
 .chat-input {
     flex: 1;
