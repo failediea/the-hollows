@@ -1,7 +1,7 @@
 import Database from 'better-sqlite3';
 import { Season, Agent } from '../db/schema.js';
 
-export const SEASON_DURATION_DAYS = 36500; // ~100 years — effectively permanent
+export const SEASON_DURATION_DAYS = 7;
 
 export function initializeSeason(db: Database.Database): Season {
   const now = Date.now();

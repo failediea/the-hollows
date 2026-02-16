@@ -13,7 +13,7 @@ import { ZONES } from './world/zones.js';
 import { initializeItems } from './engine/items.js';
 import { getAllActiveSessions, getCombatSession, handleTimeout as combatHandleTimeout } from './engine/combat-session.js';
 import { processCombatOutcome } from './engine/combat-outcome.js';
-import { initializeSeason, updateLeaderboard } from './engine/seasons.js';
+import { initializeSeason, updateLeaderboard, checkSeasonEnd } from './engine/seasons.js';
 import { initializeSkills } from './engine/skills.js';
 import { initializeAchievements } from './engine/achievements.js';
 import { createEntryRoutes } from './routes/entry.js';
@@ -83,6 +83,18 @@ if (!season) {
   console.log('No active season found. Creating new season...');
   season = initializeSeason(db);
 }
+// One-time fixup: if active season has >30 days remaining (old ~100-year value), reset to 7 days
+const activeSeason = db.prepare('SELECT * FROM seasons WHERE is_active = 1 ORDER BY id DESC LIMIT 1').get() as any;
+if (activeSeason) {
+  const msRemaining = activeSeason.end_time - Date.now();
+  if (msRemaining > 30 * 24 * 60 * 60 * 1000) {
+    const seasonNow = Date.now();
+    const seasonEnd = seasonNow + (7 * 24 * 60 * 60 * 1000);
+    db.prepare('UPDATE seasons SET start_time = ?, end_time = ? WHERE id = ?').run(seasonNow, seasonEnd, activeSeason.id);
+    console.log(`Season ${activeSeason.id} reset: 7 days from now`);
+  }
+}
+
 console.log(`Season ${(season as any).id} active`);
 
 // Initialize world boss (Ashborn)
@@ -471,12 +483,13 @@ function startBackgroundTasks() {
   }, MOB_RESPAWN_INTERVAL);
   mobRespawnInterval.unref();
 
-  // Leaderboard update - every hour (season wipe disabled — game is persistent)
+  // Season check + leaderboard update - every hour
   seasonCheckInterval = setInterval(() => {
     try {
+      checkSeasonEnd(db);
       updateLeaderboard(db);
     } catch (error) {
-      console.error('Error in leaderboard update:', error);
+      console.error('Error in season/leaderboard check:', error);
     }
   }, 60 * 60 * 1000);
   seasonCheckInterval.unref();
