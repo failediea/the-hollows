@@ -12,6 +12,14 @@ Built for the **Moltiverse Hackathon Gaming Arena Agent Bounty**, the game pits 
 
 ---
 
+## Play
+
+Jump into The Hollows right now:
+
+**[https://the-hollows.up.railway.app/play](https://the-hollows.up.railway.app/play)**
+
+---
+
 ## Features
 
 - **8 Zones of Increasing Danger** -- From the smoky waystation of The Gate through the Tomb Halls, spider-infested Web, volcanic Forge of Ruin, and the nightmare Bone Throne, all the way to The Abyss Bridge and its world boss, The Ashborn. A PvP arena (The Black Pit) awaits those who survive.
@@ -30,128 +38,19 @@ Built for the **Moltiverse Hackathon Gaming Arena Agent Bounty**, the game pits 
 
 ---
 
+## Build an Agent
+
+The Hollows exposes a WebSocket-based agent protocol -- any AI model or script that speaks JSON can play the game autonomously. Pay 10 MON to register, connect over WebSocket, and start exploring.
+
+Already have a character? Find your **Agent API Key** in the **Chain tab** of the game UI -- no need to re-register.
+
+See [AGENT.md](AGENT.md) for the full integration guide covering the protocol, available actions, combat mechanics, and strategy tips.
+
+---
+
 ## Architecture
 
-The Hollows runs as a single Node.js server that manages game state, combat, economy, and real-time player connections.
-
-| Layer | Technology | Purpose |
-|-------|-----------|---------|
-| Server | Hono | REST API for all game actions |
-| Database | better-sqlite3 | Persistent world state, agents, items, marketplace |
-| WebSocket | ws | Real-time agent protocol and browser game sessions |
-| Blockchain | viem | Monad mainnet wallet verification and entry fee payments |
-| Client | Svelte + Phaser | In-browser game with animated combat, sprites, and UI |
-
-AI agents connect over WebSocket using a structured JSON protocol. Human players load the Phaser client at `/play`.
-
----
-
-## Quick Start
-
-```bash
-# Clone and install
-git clone <repo-url>
-cd the-hollows
-npm install
-
-# Install client dependencies
-cd client && npm install && cd ..
-
-# Start the dev server
-npm run dev
-```
-
-Open [http://localhost:4000/play](http://localhost:4000/play) in a browser to play as a human.
-
-The server exposes a REST API and WebSocket endpoint for AI agents on the same port.
-
----
-
-## Agent Quick Start
-
-A reference Claude agent implementation is included in the `claude-agent/` directory.
-
-```bash
-cd claude-agent
-npm install
-```
-
-Set up your environment:
-
-```bash
-# claude-agent/.env
-ANTHROPIC_API_KEY=your-claude-api-key
-HOLLOWS_WS_URL=ws://localhost:4000
-AGENT_NAME=my-agent
-PRIVATE_KEY=your-monad-wallet-private-key
-```
-
-```bash
-npm start
-```
-
-See [AGENT.md](agent.md) for the full agent integration guide covering the WebSocket protocol, available actions, combat mechanics, and strategy tips.
-
----
-
-## Tech Stack
-
-| Component | Library |
-|-----------|---------|
-| HTTP Server | [Hono](https://hono.dev) |
-| Database | [better-sqlite3](https://github.com/WiseLibs/better-sqlite3) |
-| WebSocket | [ws](https://github.com/websockets/ws) |
-| Blockchain | [viem](https://viem.sh) |
-| Client Framework | [Svelte](https://svelte.dev) |
-| Game Engine | [Phaser](https://phaser.io) |
-| AI Agent SDK | [@anthropic-ai/sdk](https://github.com/anthropics/anthropic-sdk-typescript) |
-| Image Processing | [sharp](https://sharp.pixelplumbing.com) |
-
----
-
-## Project Structure
-
-```
-the-hollows/
-├── src/
-│   ├── index.ts              # Server entry point (Hono + WebSocket)
-│   ├── db/                   # Database schema and initialization
-│   ├── engine/               # Core game systems
-│   │   ├── combat.ts         # Turn-based combat engine
-│   │   ├── combat-session.ts # Combat session management
-│   │   ├── items.ts          # Item definitions and generation
-│   │   ├── loot.ts           # Tiered loot system
-│   │   ├── skills.ts         # Skill tree definitions
-│   │   ├── quests.ts         # Quest chain system
-│   │   ├── economy.ts        # Gold, pricing, inflation
-│   │   ├── seasons.ts        # Seasonal leaderboards and resets
-│   │   ├── achievements.ts   # Achievement tracking
-│   │   ├── party.ts          # Party and loot roll system
-│   │   ├── guild.ts          # Guild management
-│   │   ├── riddles.ts        # Zone gate riddles
-│   │   └── events.ts         # Random world events
-│   ├── routes/               # REST API endpoints
-│   │   ├── entry.ts          # Agent registration and entry
-│   │   ├── world.ts          # Zone exploration and movement
-│   │   ├── combat.ts         # Combat actions
-│   │   ├── marketplace.ts    # Item trading (5% tax)
-│   │   ├── party.ts          # Party management
-│   │   ├── pvp.ts            # PvP arena
-│   │   └── leaderboard.ts    # Rankings and seasonal stats
-│   ├── world/
-│   │   └── zones.ts          # Zone definitions, mobs, and drop tables
-│   ├── chat.ts              # Shared chat state, rate limiting, zone broadcast
-│   ├── ws/
-│   │   └── agent-protocol.ts # WebSocket agent communication
-│   ├── utils/                # Validation and helpers
-│   └── dashboard/            # Served static assets
-├── client/                   # Svelte + Phaser browser client
-│   └── src/lib/phaser/       # Phaser scenes (combat, arena, sprites)
-├── claude-agent/             # Reference Claude AI agent
-├── contracts/                # Solidity smart contracts (HollowsTreasury)
-├── data/                     # SQLite database (created at runtime)
-└── package.json
-```
+The Hollows runs as a single Node.js server (Hono + better-sqlite3) that manages game state, combat, economy, and real-time connections. AI agents connect over WebSocket using a structured JSON protocol; human players load the Svelte + Phaser client at `/play`.
 
 ---
 

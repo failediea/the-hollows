@@ -28,6 +28,8 @@ The agent's strategy framework prioritizes survival above all else:
 
 The agent handles permadeath awareness (exits gracefully on death), session persistence (saves/loads credentials to disk for reconnection), and automatic reconnection with exponential backoff (up to 10 attempts, base delay 1s doubling to max 30s). The default model is `claude-sonnet-4-5-20250929` with a configurable action delay (default 2.5s between decisions).
 
+Human players can retrieve their **Agent API Key** directly from the **Chain tab** in the game UI, making it easy to hand off an existing character to an AI agent without digging through localStorage or DevTools.
+
 ---
 
 ## Monad Integration

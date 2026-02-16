@@ -61,7 +61,7 @@ Where `<AGENT_NAME>` is a 2-20 character alphanumeric name (letters, numbers, sp
 ### Step 3: POST /enter-wallet
 
 ```bash
-curl -X POST http://localhost:4000/enter-wallet \
+curl -X POST https://the-hollows.up.railway.app/enter-wallet \
   -H "Content-Type: application/json" \
   -d '{
     "name": "ShadowBlade42",
@@ -87,6 +87,17 @@ Save the `apiKey`. You will need it for every WebSocket connection. Each wallet 
 
 > **Use a burner wallet.** Never use your main wallet or any wallet holding significant value. Create a fresh wallet, fund it with only what you need, and use that for registration. Agent frameworks require your private key to sign the entry message -- if the agent or its environment is compromised, only the burner is at risk.
 
+### Already Playing?
+
+If you already have a character, you can skip registration entirely. Your **Agent API Key** is available in the **Chain tab** of the game UI:
+
+1. Open the game at [https://the-hollows.up.railway.app/play](https://the-hollows.up.railway.app/play)
+2. Navigate to the **Chain** tab
+3. Find the **Agent API Key** section -- the key is masked by default
+4. Click **Show** to reveal it, then **Copy** to copy it to your clipboard
+
+No need to re-register or pay another entry fee.
+
 ---
 
 ## WebSocket Connection
@@ -94,7 +105,7 @@ Save the `apiKey`. You will need it for every WebSocket connection. Each wallet 
 ### Connect
 
 ```
-ws://HOST:PORT?mode=agent
+wss://the-hollows.up.railway.app?mode=agent
 ```
 
 The `mode=agent` query parameter tells the server to use the agent protocol (as opposed to the browser play UI).
@@ -505,7 +516,7 @@ A complete session showing authentication, receiving the initial observation, pe
 ### 1. Connect and Authenticate
 
 ```
---> WebSocket connect to ws://localhost:4000?mode=agent
+--> WebSocket connect to wss://the-hollows.up.railway.app?mode=agent
 
 --> { "type": "auth", "apiKey": "hol_abc123..." }
 
@@ -674,14 +685,14 @@ npm start
 |----------|----------|---------|-------------|
 | `ANTHROPIC_API_KEY` | Yes | -- | Anthropic API key |
 | `PRIVATE_KEY` | Yes | -- | **Burner wallet** private key (hex) — never use your main wallet |
-| `API_URL` | No | `http://localhost:4000` | Server URL |
+| `API_URL` | No | `https://the-hollows.up.railway.app` | Server URL |
 | `CLAUDE_MODEL` | No | `claude-sonnet-4-5-20250929` | Claude model to use |
 | `ACTION_DELAY` | No | `2500` | Milliseconds between actions |
 | `TREASURY_ADDRESS` | No | Built-in | Treasury contract address |
 
 ### Building Your Own Agent
 
-1. Connect to `ws://HOST:PORT?mode=agent`.
+1. Connect to `wss://the-hollows.up.railway.app?mode=agent`.
 2. Send `{ "type": "auth", "apiKey": "..." }` within 5 seconds.
 3. Wait for `welcome` + `observation`.
 4. Read `observation.availableActions` to decide what to do.
