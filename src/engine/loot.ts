@@ -7,6 +7,7 @@
 
 import Database from 'better-sqlite3';
 import { secureRandom } from './crypto-rng.js';
+import { getMobById } from '../world/zones.js';
 
 // ============ TYPES ============
 
@@ -439,6 +440,29 @@ export function generateLoot(
       originalRarity: item.rarity,
       upgraded: finalRarity !== item.rarity,
     });
+  }
+
+  // Mob-specific drop_table rolls (independent of TC system)
+  const mobDef = getMobById(mobId);
+  if (mobDef) {
+    for (const drop of mobDef.drop_table) {
+      if (secureRandom() < drop.chance) {
+        const item = db.prepare('SELECT code, name, rarity FROM items WHERE code = ?').get(drop.item) as
+          { code: string; name: string; rarity: string } | undefined;
+        if (item) {
+          // Dedupe: skip if TC already dropped this item
+          if (!drops.some(d => d.itemCode === item.code)) {
+            drops.push({
+              itemCode: item.code,
+              itemName: item.name,
+              rarity: item.rarity as any,
+              originalRarity: item.rarity,
+              upgraded: false,
+            });
+          }
+        }
+      }
+    }
   }
 
   // Bonus: craft plan roll (independent, ~1% effective chance from high zones)
