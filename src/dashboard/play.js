@@ -14,6 +14,115 @@ const TREASURY_ABI = [
 // Track active gather cooldowns { resourceCode: { endTime, interval } }
 const gatherCooldowns = {};
 
+// ============ AMBIENT AUDIO ============
+const AMBIENT_TRACKS = {
+    login: ['/assets/audio/login-ambient.mp3'],
+    the_gate: ['/assets/audio/the-gate-ambient.mp3', '/assets/audio/login-ambient.mp3'],
+};
+
+const ambientAudio = {
+    current: null,       // current Audio element
+    currentTrack: null,  // 'login' | 'the_gate' | etc.
+    playlist: [],        // array of srcs for current zone
+    playlistIdx: 0,
+    muted: localStorage.getItem('hollows_muted') === 'true',
+    volume: 0.35,
+    fadeInterval: null,
+};
+
+function playAmbient(track) {
+    if (ambientAudio.currentTrack === track) return;
+    const playlist = AMBIENT_TRACKS[track];
+    if (!playlist || playlist.length === 0) { stopAmbient(); return; }
+
+    ambientAudio.currentTrack = track;
+    ambientAudio.playlist = playlist;
+    ambientAudio.playlistIdx = 0;
+
+    // Fade out old track, then start first in playlist
+    fadeOutAmbient(() => {
+        playPlaylistTrack();
+    });
+}
+
+function playPlaylistTrack() {
+    const src = ambientAudio.playlist[ambientAudio.playlistIdx];
+    if (!src) return;
+    const audio = new Audio(src);
+    audio.loop = false;
+    audio.volume = 0;
+    ambientAudio.current = audio;
+
+    // When track ends, crossfade to next in playlist
+    audio.addEventListener('ended', () => {
+        if (ambientAudio.current !== audio) return; // stale
+        ambientAudio.playlistIdx = (ambientAudio.playlistIdx + 1) % ambientAudio.playlist.length;
+        fadeOutAmbient(() => { playPlaylistTrack(); });
+    });
+
+    if (!ambientAudio.muted) {
+        audio.play().catch(() => {});
+        fadeInAmbient();
+    }
+}
+
+function fadeInAmbient() {
+    const audio = ambientAudio.current;
+    if (!audio) return;
+    clearInterval(ambientAudio.fadeInterval);
+    ambientAudio.fadeInterval = setInterval(() => {
+        if (audio.volume < ambientAudio.volume - 0.01) {
+            audio.volume = Math.min(audio.volume + 0.01, ambientAudio.volume);
+        } else {
+            audio.volume = ambientAudio.volume;
+            clearInterval(ambientAudio.fadeInterval);
+        }
+    }, 30);
+}
+
+function fadeOutAmbient(onDone) {
+    const audio = ambientAudio.current;
+    if (!audio) { if (onDone) onDone(); return; }
+    clearInterval(ambientAudio.fadeInterval);
+    ambientAudio.fadeInterval = setInterval(() => {
+        if (audio.volume > 0.01) {
+            audio.volume = Math.max(audio.volume - 0.02, 0);
+        } else {
+            audio.volume = 0;
+            audio.pause();
+            clearInterval(ambientAudio.fadeInterval);
+            ambientAudio.current = null;
+            ambientAudio.currentTrack = null;
+            if (onDone) onDone();
+        }
+    }, 30);
+}
+
+function stopAmbient() {
+    fadeOutAmbient();
+}
+
+function toggleAmbientMute() {
+    ambientAudio.muted = !ambientAudio.muted;
+    localStorage.setItem('hollows_muted', ambientAudio.muted);
+    if (ambientAudio.muted) {
+        if (ambientAudio.current) {
+            ambientAudio.current.pause();
+            ambientAudio.current.volume = 0;
+        }
+    } else if (ambientAudio.current) {
+        ambientAudio.current.play().catch(() => {});
+        fadeInAmbient();
+    } else if (ambientAudio.currentTrack) {
+        // Was muted and track got cleared — restart playlist
+        playPlaylistTrack();
+    }
+    // Update all mute buttons
+    document.querySelectorAll('.ambient-mute-btn').forEach(btn => {
+        btn.textContent = ambientAudio.muted ? '🔇' : '🔊';
+    });
+}
+
 // State
 let state = {
     name: null,
@@ -69,6 +178,15 @@ const ZONE_ORDER = [
 document.addEventListener('DOMContentLoaded', () => {
     spawnEmbers();
     tryAutoLogin();
+    // Sync mute button state on load
+    if (ambientAudio.muted) {
+        document.querySelectorAll('.ambient-mute-btn').forEach(btn => btn.textContent = '🔇');
+    }
+    // Start login ambient on first user interaction (browser requires gesture)
+    document.addEventListener('click', function startAmbient() {
+        if (!ambientAudio.currentTrack) playAmbient('login');
+        document.removeEventListener('click', startAmbient);
+    }, { once: true });
 });
 
 function spawnEmbers() {
@@ -329,6 +447,7 @@ function logout() {
     state = { name: null, apiKey: null, walletAddress: null, agent: null, world: null, zoneData: null, provider: null, signer: null, refreshInterval: null, zoneRefreshInterval: null };
     document.getElementById('gameScreen').classList.add('hidden');
     document.getElementById('loginScreen').classList.remove('hidden');
+    playAmbient('login');
     // Reset login form
     document.getElementById('nameInput').value = '';
     document.getElementById('walletInfo').classList.add('hidden');
@@ -341,6 +460,7 @@ function logout() {
 async function showGame() {
     document.getElementById('loginScreen').classList.add('hidden');
     document.getElementById('gameScreen').classList.remove('hidden');
+    playAmbient('the_gate');
 
     if (state.walletAddress) {
         document.getElementById('topWallet').textContent =
