@@ -1878,7 +1878,7 @@ async function renderQuestsTab() {
             } else if (q.completed) {
                 statusIcon = '🎉'; statusClass = 'quest-claimable'; statusBorder = '#fbbf24';
             } else if (q.unlocked) {
-                statusIcon = '📜'; statusClass = 'quest-active'; statusBorder = 'var(--ember-orange)';
+                statusIcon = '❗'; statusClass = 'quest-active'; statusBorder = 'var(--ember-orange)';
             } else {
                 statusIcon = '🔒'; statusClass = 'quest-locked'; statusBorder = 'rgba(255,255,255,0.1)';
             }
@@ -1959,7 +1959,7 @@ async function refreshActiveQuest() {
         container.innerHTML = `
             <div class="quest-card ${claimable ? 'quest-claimable' : 'quest-active'}">
                 <div class="quest-header">
-                    <span class="quest-title"><span class="quest-icon">${claimable ? '🎉' : '📜'}</span> ${active.name}</span>
+                    <span class="quest-title"><span class="quest-icon">${claimable ? '🎉' : '❗'}</span> ${active.name}</span>
                     <span class="quest-order">#${active.order}</span>
                 </div>
                 <div class="quest-desc">${active.description}</div>

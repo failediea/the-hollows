@@ -456,7 +456,7 @@ body {
 .zone-hero {
     position: relative;
     width: 100%;
-    aspect-ratio: 16 / 9;
+    aspect-ratio: 21 / 9;
     max-height: 420px;
     min-height: 180px;
     border-radius: 10px 10px 0 0;
@@ -533,7 +533,8 @@ body {
 .danger-0 { background: rgba(10,10,15,0.75); color: var(--ember-orange); border: 1px solid rgba(255,107,53,0.5); }
 .zone-agents { font-size: 11px; color: var(--starsilver-silver); }
 
-.rest-info { color: var(--starsilver-silver); font-size: 11px; line-height: 1.4; opacity: 0.7; }
+.rest-info { color: var(--starsilver-silver); font-size: 11px; line-height: 1.4; opacity: 0.65; }
+.rest-info strong { color: var(--bone-white); opacity: 1; font-weight: 600; }
 .btn-action {
     flex: 1; min-width: 100px; padding: 14px 16px; background: rgba(255,107,53,0.08);
     border: 1px solid var(--panel-border); border-radius: 8px; color: var(--bone-white);
@@ -545,37 +546,51 @@ body {
 
 /* Rest Action Card */
 .rest-card {
-    background: var(--stone-gray);
-    border: 1px solid var(--panel-border);
+    background: linear-gradient(135deg, rgba(30,41,59,0.6), rgba(15,23,42,0.8));
+    border: 1px solid rgba(100,116,139,0.25);
     border-radius: 10px;
-    padding: 16px;
+    padding: 14px 18px;
     margin-bottom: 16px;
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 14px;
+}
+.rest-card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+.rest-card-label {
+    font-family: var(--font-header);
+    font-size: 12px;
+    color: var(--starsilver-silver);
+    opacity: 0.5;
+    text-transform: uppercase;
+    letter-spacing: 1px;
 }
 .btn-rest {
-    min-width: 140px;
-    padding: 12px 24px;
-    background: linear-gradient(135deg, #475569, #334155);
-    border: 2px solid rgba(100,116,139,0.5);
+    min-width: 120px;
+    padding: 10px 22px;
+    background: linear-gradient(135deg, #334155, #1e293b);
+    border: 1px solid rgba(100,116,139,0.4);
     border-radius: 8px;
     color: var(--bone-white);
     font-family: var(--font-header);
-    font-size: 14px;
+    font-size: 15px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.3px;
     position: relative;
     overflow: hidden;
     flex-shrink: 0;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 2px 8px rgba(0,0,0,0.3);
 }
-.btn-rest:hover { background: linear-gradient(135deg, #64748b, #475569); border-color: rgba(148,163,184,0.6); transform: translateY(-2px); box-shadow: 0 4px 16px rgba(71,85,105,0.4); }
+.btn-rest:hover { background: linear-gradient(135deg, #475569, #334155); border-color: rgba(148,163,184,0.5); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(15,23,42,0.5), inset 0 1px 0 rgba(255,255,255,0.08); }
 .btn-rest:active { transform: translateY(0); }
 .btn-rest:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
-.btn-rest.on-cooldown { background: linear-gradient(135deg, #1e293b, #0f172a); border-color: rgba(100,116,139,0.3); color: rgba(232,220,196,0.5); cursor: not-allowed; }
+.btn-rest.on-cooldown { background: linear-gradient(135deg, #1e293b, #0f172a); border-color: rgba(100,116,139,0.2); color: rgba(232,220,196,0.5); cursor: not-allowed; }
 .btn-rest .cooldown-bar { position: absolute; bottom: 0; left: 0; height: 3px; background: linear-gradient(90deg, #64748b, #94a3b8); border-radius: 0 0 6px 6px; transition: width 1s linear; }
 
 .connected-zones-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; }
@@ -1005,6 +1020,7 @@ body {
     .tab-nav { padding: 0; }
     .tab-btn { padding: 8px 10px; font-size: 11px; }
     .rest-card { flex-direction: column; text-align: center; }
+    .rest-card-body { align-items: center; }
     .btn-rest { width: 100%; }
     .zone-hero { aspect-ratio: 16 / 9; max-height: 280px; }
     .zone-hero-title { font-size: 30px; }
@@ -2758,21 +2774,24 @@ body {
     font-family: var(--font-body);
 }
 
-/* Landing Container — Two-Column Grid */
+/* Landing Container — Single Column Centered */
 .landing-container {
     position: relative; z-index: 1;
-    display: grid; grid-template-columns: 1fr 420px;
-    gap: 48px; width: 100%; max-width: 1200px;
-    margin-left: auto; margin-right: 5vw;
+    display: flex; flex-direction: column; align-items: center;
+    width: 100%; max-width: 720px;
+    margin: 0 auto;
     padding: 40px 32px; flex: 1;
 }
 
-/* Left Column — Info */
+/* Info Column */
 .landing-info {
     display: flex; flex-direction: column; gap: 32px;
-    padding-right: 16px;
 }
 .landing-section { display: flex; flex-direction: column; gap: 10px; }
+.landing-info > .landing-section:first-child {
+    align-items: center;
+    text-align: center;
+}
 .landing-section-title {
     font-family: var(--font-title); font-size: 22px;
     color: var(--ember-orange);
@@ -2829,9 +2848,9 @@ body {
     display: inline-flex; align-items: center; justify-content: center;
     padding: 12px 24px; border-radius: 8px;
     font-family: var(--font-header); font-size: 13px; font-weight: 600;
-    color: #c084fc; text-decoration: none; text-transform: uppercase; letter-spacing: 1px;
-    background: rgba(138,43,226,0.1);
-    border: 1px solid rgba(138,43,226,0.35);
+    color: #e9d5ff; text-decoration: none; text-transform: uppercase; letter-spacing: 1px;
+    background: rgba(138,43,226,0.2);
+    border: 1px solid rgba(192,132,252,0.5);
     transition: all 0.3s;
     width: fit-content;
 }
@@ -2841,9 +2860,9 @@ body {
     transform: translateY(-2px);
 }
 
-/* Right Column — Login (Sticky) */
+/* Login Box — Single Column Flow */
 .landing-login {
-    position: sticky; top: 80px; align-self: start;
+    width: 100%; max-width: 440px;
 }
 
 /* Login Box Title */
@@ -2852,18 +2871,6 @@ body {
     color: var(--ember-orange);
     text-shadow: 0 0 25px rgba(255,107,53,0.35);
     margin: 0 0 24px 0;
-}
-
-/* Login Box Glow */
-.login-box::before {
-    content: ''; position: absolute; inset: -2px;
-    border-radius: 14px; z-index: -1;
-    background: linear-gradient(135deg, rgba(255,107,53,0.3), rgba(138,43,226,0.2));
-    animation: loginGlow 4s ease-in-out infinite alternate;
-}
-@keyframes loginGlow {
-    0% { opacity: 0.6; filter: blur(10px); box-shadow: 0 0 30px rgba(255,107,53,0.15); }
-    100% { opacity: 1; filter: blur(20px); box-shadow: 0 0 60px rgba(255,107,53,0.25), 0 0 100px rgba(138,43,226,0.15); }
 }
 
 /* Login Nav */
@@ -2900,15 +2907,7 @@ body {
 /* === LANDING RESPONSIVE === */
 @media (max-width: 768px) {
     .landing-container {
-        grid-template-columns: 1fr;
         padding: 24px 16px;
-        gap: 32px;
-    }
-    .landing-login {
-        position: static; order: -1;
-    }
-    .landing-info {
-        padding-right: 0;
     }
     .hackathon-banner {
         flex-direction: column; gap: 4px;

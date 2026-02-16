@@ -61,15 +61,43 @@
             <span class="hackathon-chain">Powered by Monad</span>
         </div>
 
-        <!-- Two-Column Landing -->
+        <!-- Landing Content -->
         <div class="landing-container">
-            <!-- LEFT: Info Column -->
             <div class="landing-info">
+                <!-- Logo -->
                 <div class="landing-section">
                     <img src="/assets/logo.png" alt="The Hollows" style="max-width: 360px; width: 100%; height: auto; margin-bottom: 0.25rem;">
                     <p class="login-subtitle">Descend into Darkness</p>
                 </div>
 
+                <!-- Login Box -->
+                <div class="landing-login">
+                    <div class="login-box">
+                        <h2 class="login-box-title">Enter The Hollows</h2>
+                        <div class="login-form">
+                            <div class="form-group">
+                                <label>Name your champion</label>
+                                <input type="text" id="nameInput" placeholder="Enter a name..." autocomplete="off" maxlength="20">
+                            </div>
+                            <button id="connectWalletBtn" class="btn btn-wallet" onclick="connectWallet()">
+                                <span class="wallet-icon">💳</span> CONNECT WALLET
+                            </button>
+                            <div id="walletInfo" class="wallet-info hidden">
+                                <span class="wallet-addr" id="walletAddr"></span>
+                                <span class="wallet-bal" id="walletBal"></span>
+                            </div>
+                            <button id="enterBtn" class="btn btn-enter hidden" onclick="enterGame()">
+                                ⚔️ Enter The Hollows
+                            </button>
+                            <p id="loginError" class="error-text"></p>
+                        </div>
+                        <div class="login-nav">
+                            <a href="/leaderboard" class="login-nav-link">View Leaderboard</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- What is The Hollows? -->
                 <div class="landing-section">
                     <h3 class="landing-section-title">What is The Hollows?</h3>
                     <p class="landing-text">A dark fantasy dungeon crawler built on Monad. Send your champion — or an AI agent — into the depths to fight monsters, gather loot, and survive permadeath. Every action is verified. Every death is final.</p>
@@ -85,6 +113,7 @@
                     </div>
                 </div>
 
+                <!-- Warning Cards -->
                 <div class="landing-section warnings-section">
                     <h3 class="landing-section-title">Before You Descend</h3>
                     <div class="warning-card warning-death">
@@ -110,37 +139,17 @@
                     </div>
                 </div>
 
+                <!-- Agent Section -->
                 <div class="landing-section agent-section">
                     <h3 class="landing-section-title">Spin Up Your AI Agent</h3>
-                    <p class="landing-text">Don't want to click through the dungeon yourself? Build an autonomous AI agent that plays for you. Connect via WebSocket, make decisions with LLMs, and let your bot grind the depths.</p>
+                    <div class="warning-card warning-corruption">
+                        <span class="warning-icon">🤖</span>
+                        <div>
+                            <strong>Autonomous AI Agents</strong>
+                            <p>Don't want to click through the dungeon yourself? Build an autonomous AI agent that plays for you. Connect via WebSocket, make decisions with LLMs, and let your bot grind the depths.</p>
+                        </div>
+                    </div>
                     <a href="https://github.com/failediea/the-hollows" target="_blank" rel="noopener" class="btn btn-agent-link">View Agent Docs on GitHub</a>
-                </div>
-            </div>
-
-            <!-- RIGHT: Login Column -->
-            <div class="landing-login">
-                <div class="login-box">
-                    <h2 class="login-box-title">Enter The Hollows</h2>
-                    <div class="login-form">
-                        <div class="form-group">
-                            <label>Name your champion</label>
-                            <input type="text" id="nameInput" placeholder="Enter a name..." autocomplete="off" maxlength="20">
-                        </div>
-                        <button id="connectWalletBtn" class="btn btn-wallet" onclick="connectWallet()">
-                            <span class="wallet-icon">💳</span> CONNECT WALLET
-                        </button>
-                        <div id="walletInfo" class="wallet-info hidden">
-                            <span class="wallet-addr" id="walletAddr"></span>
-                            <span class="wallet-bal" id="walletBal"></span>
-                        </div>
-                        <button id="enterBtn" class="btn btn-enter hidden" onclick="enterGame()">
-                            ⚔️ Enter The Hollows
-                        </button>
-                        <p id="loginError" class="error-text"></p>
-                    </div>
-                    <div class="login-nav">
-                        <a href="/leaderboard" class="login-nav-link">View Leaderboard</a>
-                    </div>
                 </div>
             </div>
         </div>
@@ -295,12 +304,14 @@
                             💤 Rest
                             <span class="cooldown-bar" id="restCooldownBar" style="width:0%"></span>
                         </button>
-                        <span class="rest-info">Heals 100% HP · 5 min cooldown</span>
+                        <div class="rest-card-body">
+                            <span class="rest-info">Heals <strong>100% HP</strong> · 5 min cooldown</span>
+                        </div>
                     </div>
 
                     <!-- Active Quest -->
                     <div class="zone-section" id="activeQuestSection" style="display:none">
-                        <h3 class="zone-section-title">📜 Quest</h3>
+                        <h3 class="zone-section-title">❗ Quest</h3>
                         <div id="activeQuestContent"></div>
                     </div>
 
