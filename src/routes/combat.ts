@@ -261,13 +261,19 @@ export function createCombatRoutes(db: Database.Database) {
       return c.json({ error: `Combat is ${session.status}` }, 400);
     }
 
+    const snapshot = { ...session, agentId: session.agentId };
     const resolution = handleTimeout(combatId);
     if (!resolution) {
       return c.json({ error: 'Failed to auto-resolve' }, 500);
     }
 
-    // Return same format as action endpoint (redirect to action handler logic)
-    return c.json({ autoResolved: true, message: 'Round auto-resolved due to timeout' });
+    const updatedSession = getCombatSession(combatId);
+    let outcome = {};
+    if (updatedSession && (updatedSession.status === 'victory' || updatedSession.status === 'defeat' || updatedSession.status === 'fled')) {
+      outcome = processCombatOutcome(db, snapshot, updatedSession, resolution);
+    }
+
+    return c.json({ autoResolved: true, message: 'Round auto-resolved due to timeout', ...outcome });
   });
 
   /**

@@ -11,7 +11,8 @@ import { getApiKeyFromRequest } from './utils/validation.js';
 import { verifyMessage } from 'viem';
 import { ZONES } from './world/zones.js';
 import { initializeItems } from './engine/items.js';
-import { getAllActiveSessions, handleTimeout as combatHandleTimeout } from './engine/combat-session.js';
+import { getAllActiveSessions, getCombatSession, handleTimeout as combatHandleTimeout } from './engine/combat-session.js';
+import { processCombatOutcome } from './engine/combat-outcome.js';
 import { initializeSeason, updateLeaderboard } from './engine/seasons.js';
 import { initializeSkills } from './engine/skills.js';
 import { initializeAchievements } from './engine/achievements.js';
@@ -487,7 +488,14 @@ function startBackgroundTasks() {
       const sessions = getAllActiveSessions();
       for (const session of sessions) {
         if (session.status === 'awaiting_input' && now > session.deadlineAt) {
-          combatHandleTimeout(session.id);
+          const snapshot = { ...session, agentId: session.agentId };
+          const resolution = combatHandleTimeout(session.id);
+          if (resolution) {
+            const updated = getCombatSession(session.id);
+            if (updated && (updated.status === 'victory' || updated.status === 'defeat' || updated.status === 'fled')) {
+              processCombatOutcome(db, snapshot, updated, resolution);
+            }
+          }
         }
       }
     } catch (error) {

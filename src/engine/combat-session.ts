@@ -1411,17 +1411,27 @@ export function getAllActiveSessions(): CombatSession[] {
 /**
  * Cleanup stale sessions (older than MAX_COMBAT_MINUTES)
  */
-export function cleanupStaleSessions(): number {
+export function cleanupStaleSessions(db?: Database.Database): number {
   const now = Date.now();
   const maxAge = COMBAT_CONFIG.MAX_COMBAT_MINUTES * 60 * 1000;
   let cleaned = 0;
-  
+
   for (const [id, session] of activeSessions.entries()) {
     if (now - session.createdAt > maxAge) {
+      // Apply defeat penalty for unresolved sessions
+      if (db && session.status !== 'victory' && session.status !== 'defeat' && session.status !== 'fled') {
+        const agent = db.prepare('SELECT * FROM agents WHERE id = ?').get(session.agentId) as any;
+        if (agent && !agent.is_dead) {
+          const goldLost = Math.floor(agent.gold * 0.5);
+          db.prepare('UPDATE agents SET hp = 0, is_dead = 1, gold = gold - ? WHERE id = ?').run(goldLost, agent.id);
+          const prestigeGained = agent.level * 10;
+          db.prepare('UPDATE agents SET prestige_points = prestige_points + ? WHERE id = ?').run(prestigeGained, agent.id);
+        }
+      }
       activeSessions.delete(id);
       cleaned++;
     }
   }
-  
+
   return cleaned;
 }
