@@ -490,74 +490,452 @@ function createCorsairMesh(): THREE.Group {
 
 function createPyromancerMesh(): THREE.Group {
   const g = new THREE.Group();
-  addGroundRing(g, 0xff6b35, 0.6);
 
-  // Deep red robes — lower
-  g.add(namedMesh('legs',
-    new THREE.CylinderGeometry(0.22, 0.45, 0.5, 12),
-    mat(0x5a1a10, { roughness: 0.9, metalness: 0.0 }),
-    [0, 0.25, 0],
+  // ── Color Palette ──
+  const ROBE_DEEP    = 0x3a0e08;   // deepest crimson-black
+  const ROBE_DARK    = 0x5a1a10;   // dark red
+  const ROBE_MID     = 0x7a2218;   // warm red
+  const INNER_TUNIC  = 0x2a1008;   // very dark undergarment
+  const LEATHER      = 0x3a2218;   // belt / straps
+  const METAL_BRONZE = 0x8a6a3a;   // polished bronze trim
+  const METAL_AGED   = 0x4a3a2a;   // aged dark bronze
+  const SKIN         = 0xd4b898;   // warm skin
+  const HAIR_DARK    = 0x2a1a0a;   // dark hair
+  const FIRE         = 0xff6b35;   // primary fire orange
+  const FIRE_CORE    = 0xffcc00;   // inner yellow-white fire
+  const FIRE_RED     = 0xff3333;   // secondary fire red
+  const EMBER        = 0xff4400;   // ember accents
+  const WOOD         = 0x3a2218;   // staff wood
+  const WOOD_DARK    = 0x2a1810;   // wood grain
+
+  // ── Enhanced Ground Ring (dual ring + cardinal rune marks) ──
+  g.add(namedMesh('ring',
+    new THREE.TorusGeometry(0.6, 0.04, 8, 48),
+    mat(FIRE, { emissive: FIRE, emissiveIntensity: 0.4, metalness: 0.2, roughness: 0.4 }),
+    [0, 0.02, 0],
+    [-Math.PI / 2, 0, 0],
+  ));
+  g.add(namedMesh('ringInner',
+    new THREE.TorusGeometry(0.46, 0.022, 8, 48),
+    mat(FIRE_RED, { emissive: FIRE_RED, emissiveIntensity: 0.3, metalness: 0.2, roughness: 0.4 }),
+    [0, 0.02, 0],
+    [-Math.PI / 2, 0, 0],
+  ));
+  // Cardinal rune pips on the ground ring
+  for (let i = 0; i < 4; i++) {
+    const angle = (i / 4) * Math.PI * 2;
+    g.add(namedMesh(`groundRune${i}`,
+      new THREE.BoxGeometry(0.06, 0.005, 0.06),
+      mat(FIRE, { emissive: FIRE, emissiveIntensity: 0.6 }),
+      [Math.sin(angle) * 0.53, 0.015, Math.cos(angle) * 0.53],
+      [0, angle, 0],
+    ));
+  }
+
+  // ── Boots (peeking under robe hem) ──
+  g.add(namedMesh('bootL',
+    new THREE.BoxGeometry(0.1, 0.12, 0.16),
+    mat(LEATHER, { roughness: 0.8, metalness: 0.05 }),
+    [-0.1, 0.06, -0.02],
+  ));
+  g.add(namedMesh('bootR',
+    new THREE.BoxGeometry(0.1, 0.12, 0.16),
+    mat(LEATHER, { roughness: 0.8, metalness: 0.05 }),
+    [0.1, 0.06, -0.02],
   ));
 
-  // Slender torso — dark red
-  g.add(namedMesh('body',
-    new THREE.CapsuleGeometry(0.2, 0.45, 8, 12),
-    mat(0x7a2218, { roughness: 0.85, metalness: 0.0 }),
+  // ── Lower Robe (flowing cone with front split + hem trim) ──
+  g.add(namedMesh('legs',
+    new THREE.CylinderGeometry(0.22, 0.44, 0.52, 16),
+    mat(ROBE_DEEP, { roughness: 0.88, metalness: 0.0 }),
+    [0, 0.38, 0],
+  ));
+  // Front panel split exposing inner tunic
+  g.add(namedMesh('robePanelFront',
+    new THREE.BoxGeometry(0.16, 0.48, 0.02),
+    mat(INNER_TUNIC, { roughness: 0.9, metalness: 0.0 }),
+    [0, 0.37, -0.2],
+  ));
+  // Hem glow trim
+  g.add(namedMesh('robeHem',
+    new THREE.TorusGeometry(0.43, 0.018, 6, 32),
+    mat(EMBER, { emissive: EMBER, emissiveIntensity: 0.35, roughness: 0.5 }),
+    [0, 0.13, 0],
+    [-Math.PI / 2, 0, 0],
+  ));
+  // Side flares (left + right robe panels)
+  g.add(namedMesh('robeFlareL',
+    new THREE.BoxGeometry(0.06, 0.32, 0.14),
+    mat(ROBE_DEEP, { roughness: 0.9 }),
+    [-0.32, 0.3, 0],
+    [0, 0, 0.08],
+  ));
+  g.add(namedMesh('robeFlareR',
+    new THREE.BoxGeometry(0.06, 0.32, 0.14),
+    mat(ROBE_DEEP, { roughness: 0.9 }),
+    [0.32, 0.3, 0],
+    [0, 0, -0.08],
+  ));
+
+  // ── Belt & Accessories ──
+  g.add(namedMesh('belt',
+    new THREE.TorusGeometry(0.23, 0.028, 6, 24),
+    mat(LEATHER, { roughness: 0.75, metalness: 0.1 }),
+    [0, 0.58, 0],
+    [-Math.PI / 2, 0, 0],
+  ));
+  // Ornate buckle
+  g.add(namedMesh('buckle',
+    new THREE.BoxGeometry(0.08, 0.08, 0.04),
+    mat(METAL_BRONZE, { metalness: 0.6, roughness: 0.3, emissive: FIRE, emissiveIntensity: 0.2 }),
+    [0, 0.58, -0.22],
+  ));
+  // Pouch left
+  g.add(namedMesh('pouchL',
+    new THREE.BoxGeometry(0.07, 0.06, 0.05),
+    mat(LEATHER, { roughness: 0.8, metalness: 0.05 }),
+    [-0.16, 0.54, -0.16],
+  ));
+  // Scroll case hanging from belt
+  g.add(namedMesh('scrollCase',
+    new THREE.CylinderGeometry(0.022, 0.022, 0.13, 8),
+    mat(LEATHER, { roughness: 0.7, metalness: 0.1 }),
+    [0.18, 0.50, -0.1],
+    [0, 0, 0.3],
+  ));
+  g.add(namedMesh('scrollCap',
+    new THREE.CylinderGeometry(0.03, 0.03, 0.018, 8),
+    mat(METAL_AGED, { roughness: 0.5, metalness: 0.4 }),
+    [0.213, 0.52, -0.08],
+  ));
+
+  // ── Upper Torso (layered inner tunic + outer robe) ──
+  g.add(namedMesh('innerTunic',
+    new THREE.CapsuleGeometry(0.19, 0.34, 8, 12),
+    mat(INNER_TUNIC, { roughness: 0.9, metalness: 0.0 }),
     [0, 0.82, 0],
   ));
-
-  // Rune band on torso
-  g.add(namedMesh('runeBand',
-    new THREE.BoxGeometry(0.42, 0.03, 0.25),
-    mat(0xff6b35, { emissive: 0xff6b35, emissiveIntensity: 0.5, roughness: 0.4, metalness: 0.1 }),
-    [0, 0.88, 0],
+  g.add(namedMesh('body',
+    new THREE.CapsuleGeometry(0.21, 0.38, 8, 12),
+    mat(ROBE_MID, { roughness: 0.85, metalness: 0.0 }),
+    [0, 0.84, 0],
+  ));
+  // Chest rune plate (enchanted metal)
+  g.add(namedMesh('chestPlate',
+    new THREE.BoxGeometry(0.18, 0.14, 0.04),
+    mat(METAL_AGED, { metalness: 0.5, roughness: 0.4 }),
+    [0, 0.92, -0.19],
+  ));
+  g.add(namedMesh('chestRune',
+    new THREE.BoxGeometry(0.1, 0.07, 0.042),
+    mat(FIRE, { emissive: FIRE, emissiveIntensity: 0.6, roughness: 0.3 }),
+    [0, 0.93, -0.2],
   ));
 
-  // Pointed wizard hat / hood
+  // ── Collar (high stiff collar with trim) ──
+  g.add(namedMesh('collarBack',
+    new THREE.BoxGeometry(0.24, 0.11, 0.07),
+    mat(ROBE_DEEP, { roughness: 0.88 }),
+    [0, 1.12, 0.05],
+  ));
+  g.add(namedMesh('collarL',
+    new THREE.BoxGeometry(0.05, 0.12, 0.16),
+    mat(ROBE_DEEP, { roughness: 0.88 }),
+    [-0.13, 1.12, -0.02],
+  ));
+  g.add(namedMesh('collarR',
+    new THREE.BoxGeometry(0.05, 0.12, 0.16),
+    mat(ROBE_DEEP, { roughness: 0.88 }),
+    [0.13, 1.12, -0.02],
+  ));
+  g.add(namedMesh('collarTrim',
+    new THREE.BoxGeometry(0.3, 0.018, 0.2),
+    mat(METAL_BRONZE, { emissive: FIRE, emissiveIntensity: 0.2, metalness: 0.5, roughness: 0.35 }),
+    [0, 1.17, 0],
+  ));
+
+  // ── Diagonal sash with clasp ──
+  g.add(namedMesh('sash',
+    new THREE.BoxGeometry(0.055, 0.5, 0.03),
+    mat(FIRE_RED, { emissive: FIRE_RED, emissiveIntensity: 0.12, roughness: 0.7 }),
+    [0.03, 0.85, -0.15],
+    [0, 0, 0.35],
+  ));
+  g.add(namedMesh('sashClasp',
+    new THREE.SphereGeometry(0.035, 8, 6),
+    mat(METAL_BRONZE, { metalness: 0.6, roughness: 0.3, emissive: FIRE, emissiveIntensity: 0.3 }),
+    [0.17, 1.06, -0.15],
+  ));
+
+  // ── Shoulders (asymmetric — left ornate pauldron, right fabric) ──
+  g.add(namedMesh('pauldronL',
+    new THREE.SphereGeometry(0.09, 8, 6, 0, Math.PI * 2, 0, Math.PI / 2),
+    mat(METAL_AGED, { metalness: 0.5, roughness: 0.4 }),
+    [-0.27, 1.1, 0],
+    [0, 0, 0],
+    [1.2, 0.8, 1.2],
+  ));
+  g.add(namedMesh('pauldronRuneL',
+    new THREE.SphereGeometry(0.025, 6, 6),
+    mat(FIRE, { emissive: FIRE, emissiveIntensity: 0.7 }),
+    [-0.27, 1.14, -0.05],
+  ));
+  g.add(namedMesh('shoulderR',
+    new THREE.SphereGeometry(0.065, 8, 6),
+    mat(ROBE_MID, { roughness: 0.85 }),
+    [0.25, 1.08, 0],
+    [0, 0, 0],
+    [1, 0.7, 1],
+  ));
+
+  // ── Arms (upper sleeve + exposed forearm + bracer + hand) ──
+  // Left arm
+  g.add(namedMesh('leftArm',
+    new THREE.CylinderGeometry(0.06, 0.055, 0.24, 8),
+    mat(ROBE_MID, { roughness: 0.85 }),
+    [-0.3, 0.95, 0],
+  ));
+  g.add(namedMesh('forearmL',
+    new THREE.CylinderGeometry(0.045, 0.04, 0.2, 8),
+    mat(0x4a3020, { roughness: 0.8, metalness: 0.05 }),
+    [-0.3, 0.76, 0],
+  ));
+  g.add(namedMesh('bracerL',
+    new THREE.CylinderGeometry(0.05, 0.05, 0.05, 8),
+    mat(METAL_AGED, { metalness: 0.5, roughness: 0.4 }),
+    [-0.3, 0.73, 0],
+  ));
+  g.add(namedMesh('handL',
+    new THREE.BoxGeometry(0.05, 0.05, 0.035),
+    mat(SKIN, { roughness: 0.75 }),
+    [-0.3, 0.65, 0],
+  ));
+  // Right arm
+  g.add(namedMesh('rightArm',
+    new THREE.CylinderGeometry(0.06, 0.055, 0.24, 8),
+    mat(ROBE_MID, { roughness: 0.85 }),
+    [0.3, 0.95, 0],
+  ));
+  g.add(namedMesh('forearmR',
+    new THREE.CylinderGeometry(0.045, 0.04, 0.2, 8),
+    mat(0x4a3020, { roughness: 0.8, metalness: 0.05 }),
+    [0.3, 0.76, 0],
+  ));
+  g.add(namedMesh('bracerR',
+    new THREE.CylinderGeometry(0.05, 0.05, 0.05, 8),
+    mat(METAL_AGED, { metalness: 0.5, roughness: 0.4 }),
+    [0.3, 0.73, 0],
+  ));
+  g.add(namedMesh('handR',
+    new THREE.BoxGeometry(0.055, 0.055, 0.05),
+    mat(SKIN, { roughness: 0.75 }),
+    [0.35, 0.72, 0],
+  ));
+
+  // ── Neck ──
+  g.add(namedMesh('neck',
+    new THREE.CylinderGeometry(0.055, 0.07, 0.07, 8),
+    mat(SKIN, { roughness: 0.75 }),
+    [0, 1.2, 0],
+  ));
+
+  // ── Head ──
   g.add(namedMesh('head',
-    new THREE.SphereGeometry(0.19, 12, 10),
-    mat(0x4a1510, { roughness: 0.9, metalness: 0.0 }),
-    [0, 1.38, 0],
+    new THREE.SphereGeometry(0.17, 14, 12),
+    mat(SKIN, { roughness: 0.72 }),
+    [0, 1.36, 0],
   ));
+  // Ember eyes
+  g.add(namedMesh('eyeL',
+    new THREE.SphereGeometry(0.02, 8, 6),
+    mat(FIRE, { emissive: FIRE, emissiveIntensity: 0.7, roughness: 0.2 }),
+    [-0.055, 1.38, -0.14],
+  ));
+  g.add(namedMesh('eyeR',
+    new THREE.SphereGeometry(0.02, 8, 6),
+    mat(FIRE, { emissive: FIRE, emissiveIntensity: 0.7, roughness: 0.2 }),
+    [0.055, 1.38, -0.14],
+  ));
+  // Brow ridges
+  g.add(namedMesh('browL',
+    new THREE.BoxGeometry(0.05, 0.012, 0.02),
+    mat(0x9a7a60, { roughness: 0.8 }),
+    [-0.055, 1.4, -0.14],
+  ));
+  g.add(namedMesh('browR',
+    new THREE.BoxGeometry(0.05, 0.012, 0.02),
+    mat(0x9a7a60, { roughness: 0.8 }),
+    [0.055, 1.4, -0.14],
+  ));
+  // Short pointed goatee
+  g.add(namedMesh('goatee',
+    new THREE.ConeGeometry(0.025, 0.05, 4),
+    mat(HAIR_DARK, { roughness: 0.9 }),
+    [0, 1.28, -0.13],
+    [Math.PI, 0, 0],
+  ));
+
+  // ── Wizard Hat (brim + cone + droopy tip + band + gem) ──
+  g.add(namedMesh('hatBrim',
+    new THREE.CylinderGeometry(0.26, 0.27, 0.025, 16),
+    mat(ROBE_DEEP, { roughness: 0.88 }),
+    [0, 1.5, -0.01],
+  ));
+  g.add(namedMesh('hatCone',
+    new THREE.ConeGeometry(0.15, 0.32, 12),
+    mat(ROBE_DEEP, { roughness: 0.88 }),
+    [0, 1.69, 0],
+  ));
+  // Droopy bent tip
   g.add(namedMesh('hatTip',
-    new THREE.ConeGeometry(0.12, 0.25, 8),
-    mat(0x4a1510, { roughness: 0.9, metalness: 0.0 }),
-    [0, 1.6, 0],
+    new THREE.ConeGeometry(0.055, 0.13, 8),
+    mat(ROBE_DEEP, { roughness: 0.9 }),
+    [0, 1.86, -0.06],
+    [0.45, 0, 0],
+  ));
+  // Hat band
+  g.add(namedMesh('hatBand',
+    new THREE.TorusGeometry(0.148, 0.016, 6, 24),
+    mat(METAL_BRONZE, { emissive: FIRE, emissiveIntensity: 0.25, metalness: 0.5, roughness: 0.35 }),
+    [0, 1.55, 0],
+    [-Math.PI / 2, 0, 0],
+  ));
+  // Hat gem
+  g.add(namedMesh('hatGem',
+    new THREE.OctahedronGeometry(0.028, 0),
+    mat(FIRE_CORE, { emissive: FIRE_CORE, emissiveIntensity: 0.8, roughness: 0.2 }),
+    [0, 1.55, -0.15],
+    [0, Math.PI / 4, 0],
   ));
 
-  // Face
-  g.add(namedMesh('face',
-    new THREE.SphereGeometry(0.13, 10, 8),
-    mat(0xd4b898, { roughness: 0.75, metalness: 0.0 }),
-    [0, 1.36, -0.06],
-  ));
-
-  // Arms — robed
-  addArm(g, 'left', 0x5a1a10, { roughness: 0.85, metalness: 0.0 });
-  addArm(g, 'right', 0x5a1a10, { roughness: 0.85, metalness: 0.0 });
-
-  // Staff — dark wood shaft
+  // ── Staff (gnarled wood + knots + wraps + metal cradle + fire orb) ──
+  // Main shaft — tapered
   g.add(namedMesh('staffShaft',
-    new THREE.CylinderGeometry(0.025, 0.03, 1.6, 6),
-    mat(0x3a2218, { roughness: 0.85, metalness: 0.0 }),
-    [0.35, 0.8, 0],
+    new THREE.CylinderGeometry(0.02, 0.03, 1.7, 8),
+    mat(WOOD, { roughness: 0.85 }),
+    [0.35, 0.85, 0],
   ));
+  // Wood grain wraps (organic feel)
+  g.add(namedMesh('staffWrap1',
+    new THREE.TorusGeometry(0.028, 0.007, 4, 12, Math.PI),
+    mat(WOOD_DARK, { roughness: 0.9 }),
+    [0.35, 0.5, 0],
+    [Math.PI / 2, 0, 0.3],
+  ));
+  g.add(namedMesh('staffWrap2',
+    new THREE.TorusGeometry(0.028, 0.007, 4, 12, Math.PI),
+    mat(WOOD_DARK, { roughness: 0.9 }),
+    [0.35, 0.9, 0],
+    [Math.PI / 2, 0, -0.3],
+  ));
+  g.add(namedMesh('staffWrap3',
+    new THREE.TorusGeometry(0.028, 0.007, 4, 12, Math.PI),
+    mat(WOOD_DARK, { roughness: 0.9 }),
+    [0.35, 1.2, 0],
+    [Math.PI / 2, 0, 0.5],
+  ));
+  // Organic wood knot
+  g.add(namedMesh('staffKnot',
+    new THREE.SphereGeometry(0.035, 6, 6),
+    mat(WOOD, { roughness: 0.85 }),
+    [0.35, 1.05, -0.02],
+  ));
+  // Metal butt cap
+  g.add(namedMesh('staffCap',
+    new THREE.ConeGeometry(0.032, 0.05, 6),
+    mat(METAL_AGED, { metalness: 0.5, roughness: 0.4 }),
+    [0.35, 0.0, 0],
+    [Math.PI, 0, 0],
+  ));
+  // Crystal cradle — three bronze prongs
+  for (let i = 0; i < 3; i++) {
+    const angle = (i / 3) * Math.PI * 2;
+    g.add(namedMesh(`prong${i}`,
+      new THREE.CylinderGeometry(0.008, 0.013, 0.16, 4),
+      mat(METAL_BRONZE, { metalness: 0.6, roughness: 0.3 }),
+      [
+        0.35 + Math.sin(angle) * 0.035,
+        1.7,
+        Math.cos(angle) * 0.035,
+      ],
+      [0, 0, Math.sin(angle) * 0.25],
+    ));
+  }
 
-  // GLOWING fire orb atop staff
+  // ── Fire Orb (4-layer: corona → outer → core → white-hot center) ──
+  // Outer corona glow
+  g.add(namedMesh('fireCorona',
+    new THREE.SphereGeometry(0.15, 12, 10),
+    mat(FIRE, {
+      emissive: FIRE, emissiveIntensity: 0.3,
+      transparent: true, opacity: 0.2, roughness: 0.2,
+    }),
+    [0.35, 1.78, 0],
+  ));
+  // Main fire orb (AnimationSystem's "weapon" — bobs in idle, swings in walk)
   g.add(namedMesh('weapon',
-    new THREE.SphereGeometry(0.12, 12, 10),
-    mat(0xff6b35, { emissive: 0xff6b35, emissiveIntensity: 0.8, roughness: 0.2, metalness: 0.1 }),
-    [0.35, 1.65, 0],
+    new THREE.SphereGeometry(0.1, 14, 12),
+    mat(FIRE, {
+      emissive: FIRE, emissiveIntensity: 0.85,
+      roughness: 0.15, metalness: 0.1,
+    }),
+    [0.35, 1.78, 0],
   ));
-
-  // Inner fire core
+  // Inner hot core
   g.add(namedMesh('fireCore',
-    new THREE.SphereGeometry(0.06, 8, 6),
-    mat(0xffcc00, { emissive: 0xffcc00, emissiveIntensity: 0.9, roughness: 0.2, metalness: 0.0 }),
-    [0.35, 1.65, 0],
+    new THREE.SphereGeometry(0.05, 10, 8),
+    mat(FIRE_CORE, {
+      emissive: FIRE_CORE, emissiveIntensity: 1.0,
+      roughness: 0.1,
+    }),
+    [0.35, 1.78, 0],
+  ));
+  // White-hot center
+  g.add(namedMesh('fireCenter',
+    new THREE.SphereGeometry(0.022, 8, 6),
+    mat(0xffffff, {
+      emissive: 0xffffff, emissiveIntensity: 1.0,
+      roughness: 0.0,
+    }),
+    [0.35, 1.78, 0],
   ));
 
-  addDirectionArrow(g, 0xff3333);
+  // ── Back Drape (hanging robe fabric with rune edge) ──
+  g.add(namedMesh('backDrape',
+    new THREE.BoxGeometry(0.24, 0.55, 0.025),
+    mat(ROBE_DEEP, { roughness: 0.9 }),
+    [0, 0.65, 0.2],
+    [0.05, 0, 0],
+  ));
+  g.add(namedMesh('drapeRuneLine',
+    new THREE.BoxGeometry(0.18, 0.015, 0.027),
+    mat(EMBER, { emissive: EMBER, emissiveIntensity: 0.3 }),
+    [0, 0.4, 0.2],
+  ));
+
+  // ── Scattered Emissive Rune Marks on Robe ──
+  g.add(namedMesh('runeBody1',
+    new THREE.BoxGeometry(0.035, 0.02, 0.005),
+    mat(FIRE, { emissive: FIRE, emissiveIntensity: 0.5 }),
+    [-0.1, 0.76, -0.21],
+  ));
+  g.add(namedMesh('runeBody2',
+    new THREE.BoxGeometry(0.02, 0.035, 0.005),
+    mat(FIRE, { emissive: FIRE, emissiveIntensity: 0.4 }),
+    [0.1, 0.83, -0.21],
+  ));
+  g.add(namedMesh('runeSkirt1',
+    new THREE.BoxGeometry(0.03, 0.025, 0.005),
+    mat(FIRE, { emissive: FIRE, emissiveIntensity: 0.3 }),
+    [-0.16, 0.35, -0.34],
+  ));
+  g.add(namedMesh('runeSkirt2',
+    new THREE.BoxGeometry(0.025, 0.03, 0.005),
+    mat(FIRE, { emissive: FIRE, emissiveIntensity: 0.3 }),
+    [0.14, 0.28, -0.32],
+  ));
+
+  addDirectionArrow(g, FIRE_RED);
   return g;
 }
 

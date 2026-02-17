@@ -41,6 +41,8 @@ export class ProjectileManager {
   private particles: ParticleSystem | null;
   private active: Map<string, ProjectileMesh> = new Map();
   private effects: THREE.Mesh[] = [];
+  // Pre-allocated temp vector to avoid GC pressure in render loop
+  private _dir = new THREE.Vector3();
 
   constructor(scene: THREE.Scene, particleSystem?: ParticleSystem) {
     this.scene = scene;
@@ -66,7 +68,7 @@ export class ProjectileManager {
     // Add/update projectiles
     for (const proj of projectiles) {
       const world = arenaToWorld(proj.x, proj.y);
-      const worldPos = new THREE.Vector3(world.x, 0.8, world.z);
+      const worldPos = new THREE.Vector3(world.x, 1.5, world.z);
 
       if (this.active.has(proj.id)) {
         const pm = this.active.get(proj.id)!;
@@ -309,6 +311,14 @@ export class ProjectileManager {
       group.add(glow);
     }
 
+    // Scale up for top-down visibility (camera is 22 units above)
+    group.scale.setScalar(3);
+
+    // Add dynamic point light so projectile illuminates the dungeon as it flies
+    const glowLight = new THREE.PointLight(color, 2.5, 10);
+    glowLight.position.y = 0.2;
+    group.add(glowLight);
+
     return group;
   }
 
@@ -317,16 +327,16 @@ export class ProjectileManager {
     switch (visual) {
       case 'fireball':
       case 'meteor':
-        return 4;
+        return 8;
       case 'shadow_bolt':
       case 'ice_spike':
       case 'life_drain':
-        return 3;
+        return 6;
       case 'crossbow_bolt':
       case 'fan_of_knives':
-        return 1;
+        return 3;
       default:
-        return 2;
+        return 4;
     }
   }
 
@@ -334,19 +344,19 @@ export class ProjectileManager {
     for (const [, pm] of this.active) {
       pm.age += dt;
       // Lerp toward target
-      const lerpFactor = 1 - Math.pow(0.001, dt);
+      const lerpFactor = Math.min(1, dt * 20);
       pm.currentPos.lerp(pm.targetPos, lerpFactor);
       pm.group.position.copy(pm.currentPos);
 
-      // Rotate to face travel direction
-      const dir = pm.targetPos.clone().sub(pm.currentPos);
-      if (dir.length() > 0.01) {
+      // Rotate to face travel direction (reuse pre-allocated vector)
+      this._dir.subVectors(pm.targetPos, pm.currentPos);
+      if (this._dir.length() > 0.01) {
         pm.group.lookAt(pm.targetPos);
       }
 
-      // Meteor: descend toward ground
-      if (pm.group.position.y > 0.8) {
-        pm.group.position.y = Math.max(0.8, pm.group.position.y - dt * 8);
+      // Meteor: descend toward flight height
+      if (pm.visual === 'meteor' && pm.group.position.y > 1.5) {
+        pm.group.position.y = Math.max(1.5, pm.group.position.y - dt * 6);
       }
 
       // Emit trail particles

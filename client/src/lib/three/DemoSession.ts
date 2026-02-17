@@ -5,9 +5,9 @@ import { CLASS_DEFS } from './ClassDefs';
 // Arena is 1400x1000
 const ARENA_W = 1400;
 const ARENA_H = 1000;
-const PLAYER_SPEED = 5.5;
-const ENEMY_SPEED = 2.5;
-const CHASE_SPEED = 3.8;
+const PLAYER_SPEED = 3.5;
+const ENEMY_SPEED = 1.5;
+const CHASE_SPEED = 2.5;
 const AGGRO_RANGE = 120;
 const ENEMY_ATTACK_RANGE = 45;
 const ENEMY_ATTACK_COOLDOWN = 12;
@@ -705,7 +705,7 @@ export class DemoSession {
       x: sx, y: sy,
       targetX: tx, targetY: ty,
       targetId,
-      speed: speed * 10, // arena units per tick
+      speed: speed * 2, // arena units per tick (slow enough to see travel)
       damage, element, visual,
       aoeRadius, piercing, healPercent,
       hitIds: new Set(),

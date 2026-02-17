@@ -90,8 +90,8 @@ export class DungeonScene {
       callbacks?.onPointerLockChange?.(state.pointerLocked);
     });
 
-    // Entity manager
-    this.entityManager = new EntityManager(this.scene, container);
+    // Entity manager (with particle system for death bursts)
+    this.entityManager = new EntityManager(this.scene, container, this.particleSystem);
 
     // Wire entity manager into player controller for right-click targeting
     this.playerController.setEntityManager(this.entityManager);

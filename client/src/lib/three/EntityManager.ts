@@ -5,6 +5,7 @@ import { arenaToWorld } from './DungeonBuilder';
 import { createResourceMaterial, getResourceColor } from './materials';
 import { createEnemyMesh } from './CharacterFactory';
 import { AnimationController } from './AnimationSystem';
+import type { ParticleSystem } from './ParticleSystem';
 import type { EnemyArchetype, ElementType } from '../stores/types';
 
 interface EnemyMesh {
@@ -50,13 +51,16 @@ function createEnemyLabelElement(name: string): HTMLDivElement {
 export class EntityManager {
   private scene: THREE.Scene;
   private enemies: Map<string, EnemyMesh> = new Map();
+  private dying: { enemy: EnemyMesh; timer: number; burstDone: boolean }[] = [];
   private resources: Map<string, ResourceMesh> = new Map();
   private css2DRenderer: CSS2DRenderer;
   private torchRadius: number;
+  private particles: ParticleSystem | null = null;
 
-  constructor(scene: THREE.Scene, container: HTMLElement) {
+  constructor(scene: THREE.Scene, container: HTMLElement, particleSystem?: ParticleSystem) {
     this.scene = scene;
     this.torchRadius = 26; // Same as light distance
+    this.particles = particleSystem ?? null;
 
     // CSS2D renderer for floating labels
     this.css2DRenderer = new CSS2DRenderer();
@@ -114,15 +118,13 @@ export class EntityManager {
       enemy.group.visible = true;
     }
 
-    // Remove dead enemies (play death animation briefly, then dispose)
+    // Move dead enemies to dying list so their death animation keeps updating
     for (const [id, enemy] of this.enemies) {
       if (!activeIds.has(id)) {
-        // Play death animation then remove after delay
         enemy.animation.play('death');
-        const deathEnemy = enemy;
-        setTimeout(() => {
-          this.disposeEnemy(deathEnemy);
-        }, 800);
+        // Hide the HP label immediately
+        enemy.label.element.style.display = 'none';
+        this.dying.push({ enemy, timer: 0, burstDone: false });
         this.enemies.delete(id);
       }
     }
@@ -188,6 +190,29 @@ export class EntityManager {
       // Update animation
       enemy.animation.update(dt);
     }
+
+    // Update dying enemies (play death animation, then dispose)
+    const DEATH_DURATION = 1.2; // seconds — matches animation + extra
+    this.dying = this.dying.filter((entry) => {
+      entry.timer += dt;
+      entry.enemy.animation.update(dt);
+
+      // Emit particle burst at the collapse phase (~0.4s in)
+      if (!entry.burstDone && entry.timer > 0.4 && this.particles) {
+        entry.burstDone = true;
+        const pos = entry.enemy.group.position;
+        this.particles.emitBurst(
+          new THREE.Vector3(pos.x, 1.0, pos.z),
+          0xff4400, 20, 1.5,
+        );
+      }
+
+      if (entry.timer >= DEATH_DURATION) {
+        this.disposeEnemy(entry.enemy);
+        return false;
+      }
+      return true;
+    });
 
     // Animate resources (gentle bob)
     const time = performance.now() * 0.001;
@@ -360,8 +385,10 @@ export class EntityManager {
 
   dispose() {
     for (const enemy of this.enemies.values()) this.disposeEnemy(enemy);
+    for (const { enemy } of this.dying) this.disposeEnemy(enemy);
     for (const resource of this.resources.values()) this.disposeResource(resource);
     this.enemies.clear();
+    this.dying = [];
     this.resources.clear();
     this.css2DRenderer.domElement.remove();
   }
