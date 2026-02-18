@@ -16,13 +16,15 @@ const ENEMY_SPEED = 1.5;
 const CHASE_SPEED = 2.5;
 const AGGRO_RANGE = 120;
 const ENEMY_ATTACK_RANGE = 45;
-const ENEMY_ATTACK_COOLDOWN = 12;
+const ENEMY_ATTACK_COOLDOWN = 24;
 const ENEMY_ATTACK_DMG = 8;
 const WALL_MARGIN = 14;
 const DASH_COOLDOWN = 300;  // 15s at 20 ticks/s
 const DASH_DURATION = 6;    // 300ms
 const DASH_SPEED_MULT = 4;
 const LEASH_DISTANCE = 250;
+const MIN_ENEMY_SPACING = 130;  // min distance between enemies (> AGGRO_RANGE)
+const MIN_SPAWN_DISTANCE = 200; // safe zone around player spawn
 const STANCE_COOLDOWN = 40;  // 2s at 20 ticks/s
 
 interface DemoEnemy {
@@ -277,30 +279,8 @@ export class DemoSession {
         enabled: true,
       };
 
-      // Player spawns at one of the 4 corners of the map
-      const corners = [
-        { x: 120, y: 120 },
-        { x: ARENA_W - 120, y: 120 },
-        { x: 120, y: ARENA_H - 120 },
-        { x: ARENA_W - 120, y: ARENA_H - 120 },
-      ];
-      // Pick a random corner, find nearest room to it for valid spawn
-      const corner = corners[Math.floor(Math.random() * corners.length)];
-      let spawnX = corner.x;
-      let spawnY = corner.y;
-      // Find nearest room to this corner for a guaranteed walkable position
-      let nearestRoom = layout.rooms[0];
-      let nearestDist = Infinity;
-      for (const room of layout.rooms) {
-        const d = dist(corner.x, corner.y, room.centerX, room.centerY);
-        if (d < nearestDist) {
-          nearestDist = d;
-          nearestRoom = room;
-        }
-      }
-      // Spawn at the edge of that room closest to the corner
-      spawnX = Math.max(nearestRoom.x + 30, Math.min(nearestRoom.x + nearestRoom.w - 30, corner.x));
-      spawnY = Math.max(nearestRoom.y + 30, Math.min(nearestRoom.y + nearestRoom.h - 30, corner.y));
+      const spawnX = layout.spawnPosition.x;
+      const spawnY = layout.spawnPosition.y;
 
       this.player = {
         x: spawnX, y: spawnY,
@@ -317,39 +297,61 @@ export class DemoSession {
       const zoneConfig = ZONES[zone] || ZONES['tomb_halls'];
       this.zoneDangerLevel = zoneConfig.dangerLevel;
 
-      // Get spawnable rooms (not start room)
+      // Exclude player's spawn room from enemy spawning
       const spawnRooms = layout.rooms.filter(r => !r.isStart);
 
-      // Spawn 28-38 enemies distributed across rooms (scaled for bigger map)
-      const numEnemies = 28 + Math.floor(Math.random() * 11);
+      // Spawn 140-180 enemies distributed across rooms
+      const numEnemies = 140 + Math.floor(Math.random() * 41);
       this.enemies = [];
+      const placedPositions: { x: number; y: number }[] = [];
+
       for (let i = 0; i < numEnemies; i++) {
         const mob = zoneConfig.mobs[Math.floor(Math.random() * zoneConfig.mobs.length)];
         const realtimeHp = Math.round(Math.sqrt(mob.hp) * 8);
 
-        // Pick a room — weight exit room higher for guards
+        // Pick a room — first 4 guard the exit
         let room: Room;
         if (i < 4 && layout.exitRoom) {
-          room = layout.exitRoom; // First few enemies guard the exit
+          room = layout.exitRoom;
         } else {
           room = spawnRooms[Math.floor(Math.random() * spawnRooms.length)] || layout.rooms[0];
         }
 
-        // Spawn within the room bounds
+        // Spawn within room bounds, enforcing spacing
         let ex: number, ey: number;
         let attempts = 0;
-        do {
+        let placed = false;
+        while (attempts < 50) {
           ex = room.x + 30 + Math.random() * (room.w - 60);
           ey = room.y + 30 + Math.random() * (room.h - 60);
           attempts++;
-        } while (
-          collidesWithWalls(this.arena.walls, ex, ey, 30, this.arena.width, this.arena.height) &&
-          attempts < 20
-        );
 
-        const patrolRadius = 20 + Math.random() * 40;
+          // Reject if inside a wall
+          if (collidesWithWalls(this.arena.walls, ex!, ey!, 30, this.arena.width, this.arena.height)) continue;
+
+          // Reject if too close to player spawn
+          if (dist(ex!, ey!, spawnX, spawnY) < MIN_SPAWN_DISTANCE) continue;
+
+          // Reject if too close to any already-placed enemy
+          let tooClose = false;
+          for (const p of placedPositions) {
+            if (dist(ex!, ey!, p.x, p.y) < MIN_ENEMY_SPACING) {
+              tooClose = true;
+              break;
+            }
+          }
+          if (tooClose) continue;
+
+          placed = true;
+          break;
+        }
+
+        if (!placed) continue; // skip this enemy — dungeon is full enough
+
+        placedPositions.push({ x: ex!, y: ey! });
+        const patrolRadius = 10 + Math.random() * 15;
         this.enemies.push(this.makeEnemy(
-          `e${i}`, mob.name, ex, ey,
+          `e${i}`, mob.name, ex!, ey!,
           mob.archetype || 'brute',
           mob.element || 'none',
           realtimeHp, patrolRadius,

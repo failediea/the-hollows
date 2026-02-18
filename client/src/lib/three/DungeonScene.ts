@@ -461,9 +461,6 @@ export class DungeonScene {
         this.playerCurrentPos.x, 2.0, this.playerCurrentPos.z,
         damage, 'damage',
       );
-      if (this.playerAnimation) {
-        this.playerAnimation.flashColor(0xff0000, 0.2);
-      }
     } else if (this.lastPlayerHp > 0 && state.player.hp > this.lastPlayerHp) {
       const heal = state.player.hp - this.lastPlayerHp;
       this.damageNumbers.spawn(

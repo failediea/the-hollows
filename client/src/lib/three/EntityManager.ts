@@ -164,7 +164,6 @@ export class EntityManager {
       // Detect HP change for hit animation
       if (state.hp < enemy.hp && enemy.hp > 0) {
         enemy.animation.play('hit');
-        enemy.animation.flashColor(0xff0000, 0.15);
       }
 
       enemy.hp = state.hp;

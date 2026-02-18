@@ -12,6 +12,7 @@ export interface DungeonLayout {
   startRoom: Room;
   exitRoom: Room;
   exitPosition: { x: number; y: number };
+  spawnPosition: { x: number; y: number };
   grid: Uint8Array;   // raw BSP grid: 0=wall, 1=floor
   gridW: number;
   gridH: number;
@@ -524,16 +525,27 @@ export function generateProceduralDungeon(width: number, height: number): Dungeo
     }
   }
 
-  // Select start room (nearest to arena center)
-  const centerX = width / 2;
-  const centerY = height / 2;
+  // Player spawns at one of the 4 corners
+  const corners = [
+    { x: 120, y: 120 },
+    { x: width - 120, y: 120 },
+    { x: 120, y: height - 120 },
+    { x: width - 120, y: height - 120 },
+  ];
+  const corner = corners[Math.floor(Math.random() * corners.length)];
+
+  // Find nearest room to this corner
   rooms.sort((a, b) => {
-    const da = Math.hypot(a.centerX - centerX, a.centerY - centerY);
-    const db = Math.hypot(b.centerX - centerX, b.centerY - centerY);
+    const da = Math.hypot(a.centerX - corner.x, a.centerY - corner.y);
+    const db = Math.hypot(b.centerX - corner.x, b.centerY - corner.y);
     return da - db;
   });
   const startRoom = rooms[0];
   startRoom.isStart = true;
+
+  // Spawn position: edge of that room closest to the corner
+  const spawnX = Math.max(startRoom.x + 30, Math.min(startRoom.x + startRoom.w - 30, corner.x));
+  const spawnY = Math.max(startRoom.y + 30, Math.min(startRoom.y + startRoom.h - 30, corner.y));
 
   // Select exit room (greatest BFS distance from start)
   const distances = bfsDistance(rooms, corridors, startRoom);
@@ -587,6 +599,7 @@ export function generateProceduralDungeon(width: number, height: number): Dungeo
     startRoom,
     exitRoom,
     exitPosition: { x: exitRoom.centerX, y: exitRoom.centerY },
+    spawnPosition: { x: spawnX, y: spawnY },
     grid,
     gridW,
     gridH,
