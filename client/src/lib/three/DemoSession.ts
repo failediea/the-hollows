@@ -6,6 +6,7 @@ import { rollLoot, type LootDrop } from '../data/loot';
 import { ITEM_MAP } from '../data/items';
 import { xpRequiredForLevel, getLevelForXp, calculateXpPenalty } from '../data/progression';
 import { generateProceduralDungeon, type DungeonLayout, type Room } from './DungeonGenerator';
+import type { BlockStyle } from './PixelBlockRenderer';
 
 // Arena is 3600x2700 (1.5x each dimension)
 const ARENA_W = 3600;
@@ -95,6 +96,10 @@ export interface DemoCallbacks {
     playerLevel: number;
     playerXp: number;
     playerXpToNext: number;
+    wallGrid?: Uint8Array | null;
+    gridW?: number;
+    gridH?: number;
+    blockStyle?: BlockStyle | null;
   }) => void;
   onEvent: (event: RealtimeEvent) => void;
   onEnd: (result: 'victory' | 'defeat', rewards?: Rewards) => void;
@@ -183,6 +188,10 @@ export class DemoSession {
   private dungeonLayout: DungeonLayout | null = null;
   private exitPosition: { x: number; y: number } | null = null;
   private exitRadius = 40;
+  private wallGrid: Uint8Array | null = null;
+  private gridW = 0;
+  private gridH = 0;
+  private blockStyle: BlockStyle | null = null;
 
   constructor(callbacks: DemoCallbacks, zone = 'tomb_halls', playerClass?: PlayerClass, customArena?: {
     arena: ArenaData;
@@ -253,6 +262,20 @@ export class DemoSession {
       this.dungeonLayout = layout;
       this.arena = layout.arena;
       this.exitPosition = layout.exitPosition;
+
+      // Invert grid: BSP uses 0=wall, 1=floor; PixelBlockRenderer needs 1=wall, 0=floor
+      this.wallGrid = new Uint8Array(layout.grid.length);
+      for (let i = 0; i < layout.grid.length; i++) {
+        this.wallGrid[i] = layout.grid[i] === 0 ? 1 : 0;
+      }
+      this.gridW = layout.gridW;
+      this.gridH = layout.gridH;
+      this.blockStyle = {
+        floorBlock: 'pixel_blocks/Stone',
+        wallBlock: 'pixel_blocks/Bricks_Dark',
+        wallHeight: 3,
+        enabled: true,
+      };
 
       // Player spawns at one of the 4 corners of the map
       const corners = [
@@ -1342,6 +1365,10 @@ export class DemoSession {
       playerLevel: this.playerLevel,
       playerXp: this.playerXp,
       playerXpToNext: xpRequiredForLevel(this.playerLevel + 1),
+      wallGrid: this.wallGrid,
+      gridW: this.gridW,
+      gridH: this.gridH,
+      blockStyle: this.blockStyle,
     });
   }
 }

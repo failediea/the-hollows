@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { CSS2DRenderer } from 'three/addons/renderers/CSS2DRenderer.js';
 import { realtimeStore } from '../stores/realtimeStore.svelte';
 import { buildDungeon, disposeDungeon, arenaToWorld, worldToArena, type DungeonGeometry } from './DungeonBuilder';
+import { createPixelBlockRenderer, type PixelBlockHandle } from './PixelBlockRenderer';
 import { loadDungeonProps, type DungeonPropsHandle } from './DungeonProps';
 import { PlayerController } from './PlayerController';
 import { EntityManager } from './EntityManager';
@@ -57,6 +58,7 @@ export class DungeonScene {
   private damageNumbers: DamageNumberManager;
   private playerAnimation: PlayerAnimController | null = null;
   private fogOfWar: FogOfWar | null = null;
+  private pixelBlocks: PixelBlockHandle | null = null;
 
   // Player avatar mesh (visible from top-down)
   private playerMesh: THREE.Group | null = null;
@@ -343,8 +345,33 @@ export class DungeonScene {
       if (this.dungeon) disposeDungeon(this.dungeon);
       if (this.dungeonProps) { this.dungeonProps.dispose(); this.dungeonProps = null; }
       if (this.fogOfWar) { this.fogOfWar.dispose(); this.fogOfWar = null; }
-      this.dungeon = buildDungeon(state.arena, zone, getLoadedWallAsset() || undefined);
-      this.scene.add(this.dungeon.group);
+      if (this.pixelBlocks) { this.pixelBlocks.dispose(); this.scene.remove(this.pixelBlocks.group); this.pixelBlocks = null; }
+
+      const wallAsset = getLoadedWallAsset() || undefined;
+
+      if (state.blockStyle && state.wallGrid) {
+        // Pixel block mode: skip floor + interior walls (pixel blocks handle those)
+        this.dungeon = buildDungeon(state.arena, zone, wallAsset, { skipFloor: true, skipInteriorWalls: true });
+        this.scene.add(this.dungeon.group);
+
+        // Create pixel block renderer
+        this.pixelBlocks = createPixelBlockRenderer();
+        this.scene.add(this.pixelBlocks.group);
+        this.pixelBlocks.rebuild(state.wallGrid, state.gridW, state.gridH, state.arena.width, state.arena.height, state.blockStyle);
+        // Skip DungeonProps — pixel blocks handle environment
+      } else {
+        // Classic rendering
+        this.dungeon = buildDungeon(state.arena, zone, wallAsset);
+        this.scene.add(this.dungeon.group);
+
+        // Load GLTF environment props asynchronously
+        const arenaSnapshot = state.arena;
+        loadDungeonProps(arenaSnapshot, zone).then((handle) => {
+          if (this.disposed) { handle.dispose(); return; }
+          this.dungeonProps = handle;
+          this.scene.add(handle.group);
+        });
+      }
 
       // Create fog of war
       this.fogOfWar = new FogOfWar(state.arena.width, state.arena.height);
@@ -355,14 +382,6 @@ export class DungeonScene {
 
       // Pass FoW to entity manager
       this.entityManager.setFogOfWar(this.fogOfWar);
-
-      // Load GLTF environment props asynchronously
-      const arenaSnapshot = state.arena;
-      loadDungeonProps(arenaSnapshot, zone).then((handle) => {
-        if (this.disposed) { handle.dispose(); return; }
-        this.dungeonProps = handle;
-        this.scene.add(handle.group);
-      });
 
       // Update lighting for zone
       updateZoneLighting(this.lighting, zone);
@@ -680,6 +699,7 @@ export class DungeonScene {
     if (this.dungeon) disposeDungeon(this.dungeon);
     if (this.dungeonProps) this.dungeonProps.dispose();
     if (this.fogOfWar) this.fogOfWar.dispose();
+    if (this.pixelBlocks) { this.pixelBlocks.dispose(); this.scene.remove(this.pixelBlocks.group); }
     if (this.exitGroup) {
       this.exitGroup.traverse((child) => {
         if (child instanceof THREE.Mesh) {

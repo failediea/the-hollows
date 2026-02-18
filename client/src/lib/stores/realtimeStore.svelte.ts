@@ -1,4 +1,5 @@
 import type { Stance, ElementType, EnemyArchetype, Rewards, PlayerClass, GroundLootItem } from './types';
+import type { BlockStyle } from '../three/PixelBlockRenderer';
 
 export interface RealtimePlayerState {
   x: number;
@@ -105,6 +106,10 @@ interface RealtimeState {
   targetEnemyId: string | null;
   fowGrid: Uint8Array | null;
   fowGridW: number;
+  wallGrid: Uint8Array | null;
+  gridW: number;
+  gridH: number;
+  blockStyle: BlockStyle | null;
 }
 
 function createRealtimeStore() {
@@ -130,6 +135,10 @@ function createRealtimeStore() {
     targetEnemyId: null,
     fowGrid: null,
     fowGridW: 0,
+    wallGrid: null,
+    gridW: 0,
+    gridH: 0,
+    blockStyle: null,
   });
 
   let ws: WebSocket | null = null;
@@ -273,6 +282,10 @@ function createRealtimeStore() {
         if (data.playerLevel !== undefined) state.playerLevel = data.playerLevel;
         if (data.playerXp !== undefined) state.playerXp = data.playerXp;
         if (data.playerXpToNext !== undefined) state.playerXpToNext = data.playerXpToNext;
+        if (data.wallGrid !== undefined) state.wallGrid = data.wallGrid;
+        if (data.gridW !== undefined) state.gridW = data.gridW;
+        if (data.gridH !== undefined) state.gridH = data.gridH;
+        if (data.blockStyle !== undefined) state.blockStyle = data.blockStyle;
         state.tick = data.tick;
         notifySubscribers();
       },
