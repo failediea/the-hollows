@@ -105,17 +105,56 @@ export interface RoundResolution {
   narrative: string;
 }
 
+export interface GroundLootState {
+  id: string;
+  itemCode: string;
+  itemName: string;
+  rarity: string;
+  x: number;
+  y: number;
+}
+
+export interface GroundLootItem {
+  id: string;
+  itemCode: string;
+  itemName: string;
+  rarity: string;
+  x: number;
+  y: number;
+  pickedUp: boolean;
+  isHealing?: boolean;
+  healAmount?: number;
+}
+
+export type EquipSlot = 'weapon' | 'armor' | 'shield' | 'accessory';
+
+export interface InventoryItem {
+  id: number;
+  itemCode: string;
+  itemName: string;
+  rarity: string;
+  category: string;
+  atkBonus: number;
+  defBonus: number;
+  hpBonus: number;
+  equipped: boolean;
+}
+
 export interface Rewards {
   xpGained: number;
   goldGained: number;
-  itemsDropped: string[];
+  itemsDropped: { itemName: string; rarity: string }[];
   xpCapped: boolean;
+  playerLevel?: number;
+  playerLevelEnd?: number;
   xpCappedMessage?: string;
   questCompleted?: string;
   gateUnlocked?: boolean;
   newZone?: string;
   gateMessage?: string;
   lootRoll?: any;
+  lootItems?: Array<{ name: string; rarity: string }>;
+  nextZone?: string;
   partyRewards?: {
     totalXp: number;
     totalGold: number;

@@ -1,0 +1,210 @@
+{
+  "version": "1.0",
+  "model": "Sentinel",
+  "description": "Armored sentinel warrior with 24-bone skeleton and 7 animation clips, each in a separate GLB file sharing identical mesh and texture.",
+  "mesh": {
+    "name": "char1",
+    "vertices": 1574,
+    "triangles": 996,
+    "indices": 2988,
+    "attributes": {
+      "POSITION": "VEC3 (float32)",
+      "NORMAL": "VEC3 (float32)",
+      "TEXCOORD_0": "VEC2 (float32)",
+      "JOINTS_0": "VEC4 (uint8)",
+      "WEIGHTS_0": "VEC4 (float32)"
+    },
+    "boundingBox": {
+      "min": [-1.165, 0.0, -0.3743],
+      "max": [1.165, 1.6688, 0.3743]
+    },
+    "dimensions": {
+      "width": 2.33,
+      "height": 1.6688,
+      "depth": 0.7485
+    }
+  },
+  "material": {
+    "name": "Material_1",
+    "type": "pbrMetallicRoughness",
+    "alphaMode": "OPAQUE",
+    "doubleSided": true,
+    "baseColorFactor": [1, 1, 1, 1],
+    "metallicFactor": 1,
+    "roughnessFactor": 0.41,
+    "emissiveFactor": [1, 1, 1],
+    "textures": {
+      "baseColor": {
+        "index": 0,
+        "mimeType": "image/png",
+        "sizeBytes": 3460000,
+        "shared": true,
+        "note": "Same texture used for both baseColor and emissive slots"
+      },
+      "emissive": {
+        "index": 0,
+        "mimeType": "image/png",
+        "note": "Shares texture with baseColor"
+      }
+    }
+  },
+  "skeleton": {
+    "name": "Armature",
+    "jointCount": 24,
+    "hierarchy": {
+      "Hips": {
+        "LeftUpLeg": {
+          "LeftLeg": {
+            "LeftFoot": {
+              "LeftToeBase": {}
+            }
+          }
+        },
+        "RightUpLeg": {
+          "RightLeg": {
+            "RightFoot": {
+              "RightToeBase": {}
+            }
+          }
+        },
+        "Spine02": {
+          "Spine01": {
+            "Spine": {
+              "LeftShoulder": {
+                "LeftArm": {
+                  "LeftForeArm": {
+                    "LeftHand": {}
+                  }
+                }
+              },
+              "RightShoulder": {
+                "RightArm": {
+                  "RightForeArm": {
+                    "RightHand": {}
+                  }
+                }
+              },
+              "neck": {
+                "Head": {
+                  "head_end": {},
+                  "headfront": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "animations": {
+    "Combat_Stance": {
+      "file": "sentinel_Combat_Stance_withSkin.glb",
+      "clipName": "Armature|Combat_Stance|baselayer",
+      "duration": 1.70,
+      "channels": 72,
+      "interpolation": "LINEAR",
+      "loop": true,
+      "gameMapping": "idle"
+    },
+    "Walking": {
+      "file": "sentinel_Animation_Walking_withSkin.glb",
+      "clipName": "Armature|Walking|baselayer",
+      "duration": 1.07,
+      "channels": 72,
+      "interpolation": "LINEAR",
+      "loop": true,
+      "gameMapping": "walk"
+    },
+    "Running": {
+      "file": "sentinel_Animation_Running_withSkin.glb",
+      "clipName": "Armature|Running|baselayer",
+      "duration": 0.67,
+      "channels": 72,
+      "interpolation": "LINEAR",
+      "loop": true,
+      "gameMapping": "walk_fast"
+    },
+    "Lean_Forward_Sprint": {
+      "file": "sentinel_Lean_Forward_Sprint_withSkin.glb",
+      "clipName": "Armature|Lean_Forward_Sprint|baselayer",
+      "duration": 0.63,
+      "channels": 72,
+      "interpolation": "LINEAR",
+      "loop": true,
+      "gameMapping": "sprint"
+    },
+    "Punch_Combo": {
+      "file": "sentinel_Animation_Punch_Combo_withSkin.glb",
+      "clipName": "Armature|Punch_Combo|baselayer",
+      "duration": 2.50,
+      "channels": 72,
+      "interpolation": "LINEAR",
+      "loop": false,
+      "gameMapping": "attack_melee"
+    },
+    "Basic_Jump": {
+      "file": "sentinel_Animation_Basic_Jump_withSkin.glb",
+      "clipName": "Armature|Basic_Jump|baselayer",
+      "duration": 5.93,
+      "channels": 72,
+      "interpolation": "LINEAR",
+      "loop": false,
+      "gameMapping": "hit"
+    },
+    "Chest_Pound_Taunt": {
+      "file": "sentinel_Chest_Pound_Taunt_withSkin.glb",
+      "clipName": "Armature|Chest_Pound_Taunt|baselayer",
+      "duration": 4.87,
+      "channels": 72,
+      "interpolation": "LINEAR",
+      "loop": false,
+      "gameMapping": "cast"
+    }
+  },
+  "files": [
+    {
+      "name": "sentinel_Combat_Stance_withSkin.glb",
+      "format": "glTF 2.0 Binary",
+      "fileSize": 3596248
+    },
+    {
+      "name": "sentinel_Animation_Walking_withSkin.glb",
+      "format": "glTF 2.0 Binary",
+      "fileSize": 3589720
+    },
+    {
+      "name": "sentinel_Animation_Running_withSkin.glb",
+      "format": "glTF 2.0 Binary",
+      "fileSize": 3585104
+    },
+    {
+      "name": "sentinel_Lean_Forward_Sprint_withSkin.glb",
+      "format": "glTF 2.0 Binary",
+      "fileSize": 3584912
+    },
+    {
+      "name": "sentinel_Animation_Punch_Combo_withSkin.glb",
+      "format": "glTF 2.0 Binary",
+      "fileSize": 3605104
+    },
+    {
+      "name": "sentinel_Animation_Basic_Jump_withSkin.glb",
+      "format": "glTF 2.0 Binary",
+      "fileSize": 3657148
+    },
+    {
+      "name": "sentinel_Chest_Pound_Taunt_withSkin.glb",
+      "format": "glTF 2.0 Binary",
+      "fileSize": 3635900
+    }
+  ],
+  "totalSize": 25253136,
+  "duplicatedData": "Mesh (1574 verts) + texture (~3.46MB) duplicated across all 7 files. Geometry + animation data ~50-100KB per file.",
+  "usage": {
+    "role": "player_character",
+    "class": "sentinel",
+    "scale": 0.95,
+    "yOffset": 0,
+    "notes": "Low-poly game-ready model (996 triangles). Feet at Y=0, no offset needed. Load mesh from any file, collect animation clips from all files. Use SkeletonUtils.clone() for instancing."
+  }
+}

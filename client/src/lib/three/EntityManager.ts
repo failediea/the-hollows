@@ -5,17 +5,33 @@ import { arenaToWorld } from './DungeonBuilder';
 import { createResourceMaterial, getResourceColor } from './materials';
 import { createEnemyMesh } from './CharacterFactory';
 import { AnimationController } from './AnimationSystem';
+import { GLTFAnimationController } from './GLTFAnimationController';
+import { createGLTFEnemySync, isModelCached, preloadEnemyModels } from './GLTFEnemyLoader';
 import type { ParticleSystem } from './ParticleSystem';
-import type { EnemyArchetype, ElementType } from '../stores/types';
+import type { EnemyArchetype, ElementType, GroundLootItem } from '../stores/types';
+import type { AnimationName } from './AnimationSystem';
+import type { FogOfWar } from './FogOfWar';
+import { worldToArena } from './DungeonBuilder';
+
+/** Common animation interface satisfied by both controller types */
+interface EnemyAnimController {
+  play(name: AnimationName): void;
+  update(dt: number): void;
+  isPlaying(name: AnimationName): boolean;
+  readonly currentAnimation: AnimationName;
+  setMoveSpeed(speed: number): void;
+  flashColor(color: number, duration?: number): void;
+}
 
 interface EnemyMesh {
   group: THREE.Group;
+  hitbox: THREE.Mesh;       // invisible sphere for easier click targeting
   label: CSS2DObject;
   targetPos: THREE.Vector3;
   currentPos: THREE.Vector3;
   hp: number;
   maxHp: number;
-  animation: AnimationController;
+  animation: EnemyAnimController;
   archetype: EnemyArchetype;
   aiState: string;
 }
@@ -25,6 +41,14 @@ interface ResourceMesh {
   body: THREE.Mesh;
   label: CSS2DObject;
   isGathered: boolean;
+  fadeAlpha: number;
+}
+
+interface GroundLootMesh {
+  group: THREE.Group;
+  body: THREE.Mesh;
+  label: CSS2DObject;
+  pickedUp: boolean;
   fadeAlpha: number;
 }
 
@@ -53,14 +77,59 @@ export class EntityManager {
   private enemies: Map<string, EnemyMesh> = new Map();
   private dying: { enemy: EnemyMesh; timer: number; burstDone: boolean }[] = [];
   private resources: Map<string, ResourceMesh> = new Map();
+  private lootItems: Map<string, GroundLootMesh> = new Map();
   private css2DRenderer: CSS2DRenderer;
   private torchRadius: number;
   private particles: ParticleSystem | null = null;
+  private gltfReady = false;
+  private fogOfWar: FogOfWar | null = null;
+
+  // Shared hitbox geometry/material (invisible, for click targeting)
+  private hitboxGeo = new THREE.SphereGeometry(1.8, 8, 6);
+  private hitboxMat = new THREE.MeshBasicMaterial({ visible: false });
+
+  // Target circle that shows under the currently targeted enemy
+  private targetCircle: THREE.Mesh;
+  private targetCircleId: string | null = null;
+
+  private static RARITY_COLORS: Record<string, number> = {
+    common: 0xaaaaaa,
+    uncommon: 0x2ecc71,
+    rare: 0x3498db,
+    legendary: 0xf39c12,
+    cursed: 0x9b59b6,
+  };
 
   constructor(scene: THREE.Scene, container: HTMLElement, particleSystem?: ParticleSystem) {
     this.scene = scene;
     this.torchRadius = 26; // Same as light distance
     this.particles = particleSystem ?? null;
+
+    // Pre-load GLTF enemy models in background
+    preloadEnemyModels()
+      .then(() => {
+        this.gltfReady = true;
+        console.log('[EntityManager] GLTF enemy models loaded');
+      })
+      .catch((err) => {
+        console.warn('[EntityManager] GLTF load failed, falling back to procedural:', err);
+      });
+
+    // Target circle (red ring on ground under targeted enemy)
+    const targetRingGeo = new THREE.RingGeometry(1.2, 1.5, 32);
+    targetRingGeo.rotateX(-Math.PI / 2);
+    const targetRingMat = new THREE.MeshBasicMaterial({
+      color: 0xff2222,
+      transparent: true,
+      opacity: 0.55,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+    });
+    this.targetCircle = new THREE.Mesh(targetRingGeo, targetRingMat);
+    this.targetCircle.position.y = 0.05;
+    this.targetCircle.visible = false;
+    this.targetCircle.renderOrder = 1;
+    scene.add(this.targetCircle);
 
     // CSS2D renderer for floating labels
     this.css2DRenderer = new CSS2DRenderer();
@@ -70,6 +139,10 @@ export class EntityManager {
     this.css2DRenderer.domElement.style.left = '0';
     this.css2DRenderer.domElement.style.pointerEvents = 'none';
     container.appendChild(this.css2DRenderer.domElement);
+  }
+
+  setFogOfWar(fow: FogOfWar) {
+    this.fogOfWar = fow;
   }
 
   updateEnemies(enemyStates: RealtimeEnemyState[], playerWorldPos: THREE.Vector3) {
@@ -114,14 +187,22 @@ export class EntityManager {
       // Update label
       this.updateEnemyLabel(enemy, state);
 
-      // Always visible — no fog of war cutoff
-      enemy.group.visible = true;
+      // Fog of war visibility check
+      if (this.fogOfWar) {
+        enemy.group.visible = this.fogOfWar.isRevealed(state.x, state.y);
+      } else {
+        enemy.group.visible = true;
+      }
     }
 
     // Move dead enemies to dying list so their death animation keeps updating
     for (const [id, enemy] of this.enemies) {
       if (!activeIds.has(id)) {
         enemy.animation.play('death');
+        // Zero out HP bar before hiding to prevent leftover sliver
+        enemy.hp = 0;
+        const fill = enemy.label.element.querySelector('.enemy-hp-fill') as HTMLElement;
+        if (fill) fill.style.width = '0%';
         // Hide the HP label immediately
         enemy.label.element.style.display = 'none';
         this.dying.push({ enemy, timer: 0, burstDone: false });
@@ -147,8 +228,9 @@ export class EntityManager {
         resource.isGathered = true;
       }
 
-      // Always visible unless gathered
-      resource.group.visible = !state.isGathered;
+      // Fog of war + gathered visibility
+      const fowVisible = this.fogOfWar ? this.fogOfWar.isRevealed(state.x, state.y) : true;
+      resource.group.visible = !state.isGathered && fowVisible;
     }
 
     // Remove resources no longer in state
@@ -158,6 +240,87 @@ export class EntityManager {
         this.resources.delete(id);
       }
     }
+  }
+
+  updateGroundLoot(lootStates: GroundLootItem[], playerWorldPos: THREE.Vector3) {
+    const activeIds = new Set<string>();
+
+    for (const state of lootStates) {
+      if (state.pickedUp) continue;
+      activeIds.add(state.id);
+
+      let loot = this.lootItems.get(state.id);
+      if (!loot) {
+        loot = this.createLootItem(state);
+        this.lootItems.set(state.id, loot);
+      }
+
+      // Fog of war visibility check for loot
+      if (this.fogOfWar) {
+        loot.group.visible = this.fogOfWar.isRevealed(state.x, state.y);
+      } else {
+        loot.group.visible = true;
+      }
+    }
+
+    // Remove picked-up or gone loot
+    for (const [id, loot] of this.lootItems) {
+      if (!activeIds.has(id)) {
+        loot.pickedUp = true;
+      }
+    }
+  }
+
+  private createLootItem(state: GroundLootItem): GroundLootMesh {
+    const group = new THREE.Group();
+    const world = arenaToWorld(state.x, state.y);
+
+    const isHealing = !!(state as any).isHealing;
+    const color = isHealing ? 0x00ff88 : (EntityManager.RARITY_COLORS[state.rarity] || 0xaaaaaa);
+    const radius = isHealing ? 0.25 : 0.18;
+
+    // Small glowing sphere (larger + greener for healing)
+    const geo = new THREE.SphereGeometry(radius, 8, 8);
+    const mat = new THREE.MeshStandardMaterial({
+      color,
+      emissive: color,
+      emissiveIntensity: isHealing ? 1.0 : 0.6,
+      transparent: true,
+      opacity: 1.0,
+    });
+    const body = new THREE.Mesh(geo, mat);
+    body.position.y = 0.3;
+    body.castShadow = true;
+    group.add(body);
+
+    // Brighter glow
+    const glow = new THREE.PointLight(color, 0.8, 2.5);
+    glow.position.set(0, 0.3, 0);
+    group.add(glow);
+
+    // Label
+    const labelDiv = document.createElement('div');
+    labelDiv.className = 'loot-label-3d';
+    labelDiv.textContent = state.itemName;
+    labelDiv.style.color = `#${color.toString(16).padStart(6, '0')}`;
+    labelDiv.style.fontSize = '11px';
+    labelDiv.style.fontFamily = "'Cinzel', serif";
+    labelDiv.style.textShadow = '0 1px 3px rgba(0,0,0,0.9)';
+    const label = new CSS2DObject(labelDiv);
+    label.position.set(0, 0.7, 0);
+    group.add(label);
+
+    group.position.set(world.x, 0, world.z);
+    this.scene.add(group);
+
+    return { group, body, label, pickedUp: false, fadeAlpha: 1.0 };
+  }
+
+  private disposeLootItem(loot: GroundLootMesh) {
+    loot.body.geometry.dispose();
+    (loot.body.material as THREE.Material).dispose();
+    loot.label.element.remove();
+    loot.group.removeFromParent();
   }
 
   // Pre-allocated temp vectors to avoid GC pressure in render loop
@@ -192,7 +355,7 @@ export class EntityManager {
     }
 
     // Update dying enemies (play death animation, then dispose)
-    const DEATH_DURATION = 1.2; // seconds — matches animation + extra
+    const DEATH_DURATION = 3.0; // seconds — body lingers before disposal
     this.dying = this.dying.filter((entry) => {
       entry.timer += dt;
       entry.enemy.animation.update(dt);
@@ -231,23 +394,94 @@ export class EntityManager {
       }
     }
 
+    // Animate ground loot (bob + rotate + fade on pickup)
+    for (const [id, loot] of this.lootItems) {
+      if (loot.pickedUp) {
+        loot.fadeAlpha = Math.max(0, loot.fadeAlpha - dt * 3);
+        if (loot.body.material instanceof THREE.MeshStandardMaterial) {
+          loot.body.material.opacity = loot.fadeAlpha;
+        }
+        loot.label.element.style.opacity = String(loot.fadeAlpha);
+        if (loot.fadeAlpha <= 0) {
+          this.disposeLootItem(loot);
+          this.lootItems.delete(id);
+        }
+      } else {
+        loot.body.position.y = 0.3 + Math.sin(time * 3 + loot.group.id) * 0.08;
+        loot.body.rotation.y += dt * 1.5;
+      }
+    }
+
+    // Update target circle position & pulse
+    if (this.targetCircleId) {
+      const target = this.enemies.get(this.targetCircleId);
+      if (target && target.group.visible) {
+        this.targetCircle.visible = true;
+        this.targetCircle.position.set(target.currentPos.x, 0.05, target.currentPos.z);
+        // Gentle pulse
+        const pulse = 1.0 + Math.sin(time * 4) * 0.08;
+        this.targetCircle.scale.setScalar(pulse);
+        // Rotate slowly
+        this.targetCircle.rotation.y += dt * 0.5;
+      } else {
+        this.targetCircle.visible = false;
+      }
+    } else {
+      this.targetCircle.visible = false;
+    }
+
     // Render CSS2D labels
     this.css2DRenderer.render(this.scene, camera);
   }
 
   private createEnemy(state: RealtimeEnemyState): EnemyMesh {
     const world = arenaToWorld(state.x, state.y);
+    const archetype = state.archetype as EnemyArchetype;
 
     // Outer wrapper for world positioning — animation never touches this
     const wrapper = new THREE.Group();
     wrapper.name = `enemy_wrapper_${state.id}`;
     wrapper.position.set(world.x, 0, world.z);
 
-    // Inner mesh group — AnimationController owns this (local space only)
-    const inner = createEnemyMesh(
-      state.archetype as EnemyArchetype,
-      state.element as ElementType,
-    );
+    let animation: EnemyAnimController;
+
+    // Invisible hitbox sphere for click targeting (larger than visual mesh)
+    const hitbox = new THREE.Mesh(this.hitboxGeo, this.hitboxMat);
+    hitbox.position.y = 1.0; // center at torso height
+    wrapper.add(hitbox);
+
+    // Use GLTF model if loaded, otherwise fall back to procedural
+    if (this.gltfReady && isModelCached(archetype)) {
+      const instance = createGLTFEnemySync(archetype);
+      wrapper.add(instance.group);
+
+      // GLTF label sits higher because models are taller with scale
+      const labelDiv = createEnemyLabelElement(state.name);
+      const label = new CSS2DObject(labelDiv);
+      label.position.set(0, 3.2, 0);
+      wrapper.add(label);
+
+      animation = new GLTFAnimationController(instance.group, instance.mixer, instance.clips);
+      animation.play('idle');
+
+      this.scene.add(wrapper);
+
+      return {
+        group: wrapper,
+        hitbox,
+        label,
+        targetPos: new THREE.Vector3(world.x, 0, world.z),
+        currentPos: new THREE.Vector3(world.x, 0, world.z),
+        hp: state.hp,
+        maxHp: state.maxHp,
+        animation,
+        archetype,
+        aiState: state.aiState,
+      };
+    }
+
+    // Fallback: procedural mesh
+    const inner = createEnemyMesh(archetype, state.element as ElementType);
     inner.traverse((child) => {
       if (child instanceof THREE.Mesh) {
         child.castShadow = true;
@@ -255,7 +489,6 @@ export class EntityManager {
     });
     wrapper.add(inner);
 
-    // Floating label on the wrapper (tracks world position)
     const labelDiv = createEnemyLabelElement(state.name);
     const label = new CSS2DObject(labelDiv);
     label.position.set(0, 2.5, 0);
@@ -263,22 +496,22 @@ export class EntityManager {
 
     this.scene.add(wrapper);
 
-    // Animation controller operates on inner group (local space)
-    const animation = new AnimationController(inner, {
+    animation = new AnimationController(inner, {
       type: 'enemy',
-      archetype: state.archetype as EnemyArchetype,
+      archetype,
     });
     animation.play('idle');
 
     return {
       group: wrapper,
+      hitbox,
       label,
       targetPos: new THREE.Vector3(world.x, 0, world.z),
       currentPos: new THREE.Vector3(world.x, 0, world.z),
       hp: state.hp,
       maxHp: state.maxHp,
       animation,
-      archetype: state.archetype as EnemyArchetype,
+      archetype,
       aiState: state.aiState,
     };
   }
@@ -346,25 +579,26 @@ export class EntityManager {
     resource.group.removeFromParent();
   }
 
-  /** Raycast against visible enemy meshes. Returns closest hit. */
+  /** Set which enemy is currently targeted (shows red circle). */
+  setTargetedEnemy(id: string | null) {
+    this.targetCircleId = id;
+  }
+
+  /** Raycast against enemy hitbox spheres. Returns closest hit. */
   raycastEnemy(raycaster: THREE.Raycaster): { id: string; position: THREE.Vector3 } | null {
-    const allMeshes: THREE.Object3D[] = [];
-    const meshToId = new Map<THREE.Object3D, string>();
+    const hitboxes: THREE.Mesh[] = [];
+    const meshToId = new Map<THREE.Mesh, string>();
 
     for (const [id, enemy] of this.enemies) {
       if (!enemy.group.visible) continue;
-      enemy.group.traverse((child) => {
-        if (child instanceof THREE.Mesh) {
-          child.updateWorldMatrix(true, false);
-          allMeshes.push(child);
-          meshToId.set(child, id);
-        }
-      });
+      enemy.hitbox.updateWorldMatrix(true, false);
+      hitboxes.push(enemy.hitbox);
+      meshToId.set(enemy.hitbox, id);
     }
 
-    const hits = raycaster.intersectObjects(allMeshes, false);
+    const hits = raycaster.intersectObjects(hitboxes, false);
     if (hits.length > 0) {
-      const id = meshToId.get(hits[0].object);
+      const id = meshToId.get(hits[0].object as THREE.Mesh);
       if (id) {
         const enemy = this.enemies.get(id)!;
         return { id, position: enemy.currentPos.clone() };
@@ -387,9 +621,18 @@ export class EntityManager {
     for (const enemy of this.enemies.values()) this.disposeEnemy(enemy);
     for (const { enemy } of this.dying) this.disposeEnemy(enemy);
     for (const resource of this.resources.values()) this.disposeResource(resource);
+    for (const loot of this.lootItems.values()) this.disposeLootItem(loot);
     this.enemies.clear();
     this.dying = [];
     this.resources.clear();
+    this.lootItems.clear();
     this.css2DRenderer.domElement.remove();
+
+    // Dispose shared hitbox + target circle resources
+    this.hitboxGeo.dispose();
+    this.hitboxMat.dispose();
+    (this.targetCircle.geometry as THREE.BufferGeometry).dispose();
+    (this.targetCircle.material as THREE.Material).dispose();
+    this.targetCircle.removeFromParent();
   }
 }

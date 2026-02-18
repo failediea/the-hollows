@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 import type { PlayerClass, EnemyArchetype, ElementType } from '../stores/types';
+import { hasGLTFPlayerModel, createGLTFPlayerMesh } from './GLTFPlayerLoader';
+import { hasSentinelModel, createSentinelInstance, type SentinelInstance } from './SentinelLoader';
 
 // ---------- Element Color Mapping ----------
 
@@ -64,7 +66,7 @@ function addDirectionArrow(group: THREE.Group, color = 0xffd700) {
     'arrow',
     new THREE.ConeGeometry(0.12, 0.4, 3),
     mat(color, { emissive: color, emissiveIntensity: 0.3, metalness: 0.3, roughness: 0.5 }),
-    [0, 0.02, -0.7],
+    [0, 0.02, 0.7],
     [Math.PI / 2, 0, 0],
   );
   group.add(arrow);
@@ -1015,6 +1017,106 @@ function createVoidWeaverMesh(): THREE.Group {
   return g;
 }
 
+// ---------- Sentinel GLTF Mesh (with procedural gameplay extras) ----------
+
+function buildSentinelGLTFMesh(): { group: THREE.Group; instance: SentinelInstance } {
+  const g = new THREE.Group();
+
+  const instance = createSentinelInstance();
+  const body = new THREE.Group();
+  body.name = 'body';
+  body.add(instance.group);
+  g.add(body);
+
+  // Procedural extras: ground ring + direction arrow
+  addGroundRing(g, 0xc0c0c0, 0.4);
+  addDirectionArrow(g, 0xc0c0c0);
+
+  return { group: g, instance };
+}
+
+// ---------- GLTF Player Mesh (with procedural gameplay extras) ----------
+
+function buildGLTFPlayerMesh(playerClass: PlayerClass): THREE.Group {
+  const g = new THREE.Group();
+
+  // GLTF model as 'body' — AnimationController will animate this
+  const body = createGLTFPlayerMesh(playerClass);
+  g.add(body);
+
+  // Add class-specific procedural extras (ground ring, weapon, arrow)
+  if (playerClass === 'pyromancer') {
+    addPyromancerExtras(g);
+  }
+
+  return g;
+}
+
+function addPyromancerExtras(g: THREE.Group) {
+  const FIRE      = 0xff6b35;
+  const FIRE_CORE = 0xffcc00;
+  const FIRE_RED  = 0xff3333;
+
+  // ── Ground Ring (dual ring + cardinal rune marks) ──
+  g.add(namedMesh('ring',
+    new THREE.TorusGeometry(0.6, 0.04, 8, 48),
+    mat(FIRE, { emissive: FIRE, emissiveIntensity: 0.4, metalness: 0.2, roughness: 0.4 }),
+    [0, 0.02, 0],
+    [-Math.PI / 2, 0, 0],
+  ));
+  g.add(namedMesh('ringInner',
+    new THREE.TorusGeometry(0.46, 0.022, 8, 48),
+    mat(FIRE_RED, { emissive: FIRE_RED, emissiveIntensity: 0.3, metalness: 0.2, roughness: 0.4 }),
+    [0, 0.02, 0],
+    [-Math.PI / 2, 0, 0],
+  ));
+  for (let i = 0; i < 4; i++) {
+    const angle = (i / 4) * Math.PI * 2;
+    g.add(namedMesh(`groundRune${i}`,
+      new THREE.BoxGeometry(0.06, 0.005, 0.06),
+      mat(FIRE, { emissive: FIRE, emissiveIntensity: 0.6 }),
+      [Math.sin(angle) * 0.53, 0.015, Math.cos(angle) * 0.53],
+      [0, angle, 0],
+    ));
+  }
+
+  // ── Fire Orb (weapon — bobs in idle, swings in attack) ──
+  g.add(namedMesh('fireCorona',
+    new THREE.SphereGeometry(0.15, 12, 10),
+    mat(FIRE, {
+      emissive: FIRE, emissiveIntensity: 0.3,
+      transparent: true, opacity: 0.2, roughness: 0.2,
+    }),
+    [0.35, 1.75, 0],
+  ));
+  g.add(namedMesh('weapon',
+    new THREE.SphereGeometry(0.1, 14, 12),
+    mat(FIRE, {
+      emissive: FIRE, emissiveIntensity: 0.85,
+      roughness: 0.15, metalness: 0.1,
+    }),
+    [0.35, 1.75, 0],
+  ));
+  g.add(namedMesh('fireCore',
+    new THREE.SphereGeometry(0.05, 10, 8),
+    mat(FIRE_CORE, {
+      emissive: FIRE_CORE, emissiveIntensity: 1.0,
+      roughness: 0.1,
+    }),
+    [0.35, 1.75, 0],
+  ));
+  g.add(namedMesh('fireCenter',
+    new THREE.SphereGeometry(0.022, 8, 6),
+    mat(0xffffff, {
+      emissive: 0xffffff, emissiveIntensity: 1.0,
+      roughness: 0.0,
+    }),
+    [0.35, 1.75, 0],
+  ));
+
+  addDirectionArrow(g, FIRE_RED);
+}
+
 // ---------- Player Mesh Dispatch ----------
 
 const PLAYER_FACTORY: Record<PlayerClass, () => THREE.Group> = {
@@ -1027,11 +1129,43 @@ const PLAYER_FACTORY: Record<PlayerClass, () => THREE.Group> = {
   void_weaver: createVoidWeaverMesh,
 };
 
+/**
+ * Create a player mesh. Returns the group.
+ * For sentinel with GLTF model, also returns the SentinelInstance
+ * containing mixer + clips for animation.
+ */
 export function createPlayerMesh(playerClass: PlayerClass): THREE.Group {
+  // Sentinel GLTF model (animated skeleton)
+  if (playerClass === 'sentinel' && hasSentinelModel()) {
+    const { group } = buildSentinelGLTFMesh();
+    group.name = `player_${playerClass}`;
+    return group;
+  }
+
+  // Use GLTF model if cached (static mesh, e.g. pyromancer)
+  if (hasGLTFPlayerModel(playerClass)) {
+    const group = buildGLTFPlayerMesh(playerClass);
+    group.name = `player_${playerClass}`;
+    return group;
+  }
+
+  // Fall back to procedural mesh
   const factory = PLAYER_FACTORY[playerClass];
   const group = factory();
   group.name = `player_${playerClass}`;
   return group;
+}
+
+/**
+ * Create a sentinel GLTF mesh with animation data.
+ * Returns the group + SentinelInstance (mixer, clips) for GLTFAnimationController.
+ * Returns null if sentinel model is not loaded.
+ */
+export function createSentinelPlayerMesh(): { group: THREE.Group; instance: SentinelInstance } | null {
+  if (!hasSentinelModel()) return null;
+  const result = buildSentinelGLTFMesh();
+  result.group.name = 'player_sentinel';
+  return result;
 }
 
 // ---------- Enemy Mesh Factories ----------

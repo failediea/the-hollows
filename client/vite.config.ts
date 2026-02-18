@@ -8,9 +8,9 @@ export default defineConfig({
     outDir: 'dist',
   },
   server: {
+    port: 4000,
     proxy: {
       '/api': 'http://localhost:3000',
-      '/assets': 'http://localhost:3000',
     },
   },
 });

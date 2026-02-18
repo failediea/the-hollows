@@ -1,0 +1,40 @@
+{
+  "model": "mage",
+  "source": "Cube World - Aug 2023/Player/mage.glb",
+  "format": "glb",
+  "fileSize": "7.38 MB",
+  "generator": "pygltflib@v1.16.1",
+  "mesh": {
+    "primitives": 1,
+    "vertices": 1866,
+    "indices": 3582,
+    "attributes": ["POSITION", "NORMAL", "TEXCOORD_0"],
+    "boundingBox": {
+      "min": [-0.774, -0.957, -0.312],
+      "max": [0.766, 0.968, 0.305]
+    }
+  },
+  "materials": [
+    {
+      "workflow": "PBR Metallic-Roughness",
+      "baseColorTexture": true,
+      "metallicRoughnessTexture": true,
+      "normalMapTexture": true,
+      "alphaMode": "OPAQUE",
+      "doubleSided": true
+    }
+  ],
+  "animations": [],
+  "skeleton": null,
+  "textures": [
+    { "type": "baseColor", "format": "JPEG" },
+    { "type": "metallicRoughness", "format": "JPEG" },
+    { "type": "normalMap", "format": "JPEG" }
+  ],
+  "usage": {
+    "playerClass": "pyromancer",
+    "scale": 0.85,
+    "yOffset": 0.957,
+    "notes": "Static mesh — no skeleton or animation clips. Animated via group-level procedural transforms (AnimationController). Procedural gameplay elements (ground ring, fire orb, direction arrow) layered on top."
+  }
+}

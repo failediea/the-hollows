@@ -1,0 +1,84 @@
+{
+  "seed": 42,
+  "zone": "fortress",
+  "size": "small",
+  "difficulty": "hell",
+  "rooms": [
+    {
+      "id": "room_0",
+      "type": "treasure",
+      "position": [
+        17,
+        13
+      ],
+      "size": [
+        5,
+        8
+      ]
+    },
+    {
+      "id": "room_1",
+      "type": "boss",
+      "position": [
+        15,
+        2
+      ],
+      "size": [
+        6,
+        9
+      ]
+    },
+    {
+      "id": "room_2",
+      "type": "shrine",
+      "position": [
+        3,
+        2
+      ],
+      "size": [
+        7,
+        8
+      ]
+    },
+    {
+      "id": "room_3",
+      "type": "entrance",
+      "position": [
+        3,
+        13
+      ],
+      "size": [
+        10,
+        5
+      ]
+    }
+  ],
+  "connections": [
+    [
+      "room_2",
+      "room_1"
+    ],
+    [
+      "room_3",
+      "room_0"
+    ],
+    [
+      "room_2",
+      "room_3"
+    ]
+  ],
+  "spawn_points": {
+    "player": [
+      34,
+      0,
+      62
+    ],
+    "boss": [
+      74,
+      0,
+      26
+    ]
+  },
+  "light_count": 6,
+  "prop_count": 16
+}

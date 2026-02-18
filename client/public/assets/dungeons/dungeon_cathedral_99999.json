@@ -1,0 +1,308 @@
+{
+  "seed": 99999,
+  "zone": "cathedral",
+  "size": "large",
+  "difficulty": "hell",
+  "rooms": [
+    {
+      "id": "room_0",
+      "type": "shrine",
+      "position": [
+        3,
+        30
+      ],
+      "size": [
+        5,
+        5
+      ]
+    },
+    {
+      "id": "room_1",
+      "type": "treasure",
+      "position": [
+        16,
+        40
+      ],
+      "size": [
+        8,
+        6
+      ]
+    },
+    {
+      "id": "room_2",
+      "type": "treasure",
+      "position": [
+        38,
+        31
+      ],
+      "size": [
+        8,
+        6
+      ]
+    },
+    {
+      "id": "room_3",
+      "type": "arena",
+      "position": [
+        2,
+        20
+      ],
+      "size": [
+        12,
+        7
+      ]
+    },
+    {
+      "id": "room_4",
+      "type": "arena",
+      "position": [
+        3,
+        40
+      ],
+      "size": [
+        5,
+        5
+      ]
+    },
+    {
+      "id": "room_5",
+      "type": "boss",
+      "position": [
+        26,
+        21
+      ],
+      "size": [
+        8,
+        6
+      ]
+    },
+    {
+      "id": "room_6",
+      "type": "arena",
+      "position": [
+        29,
+        29
+      ],
+      "size": [
+        6,
+        6
+      ]
+    },
+    {
+      "id": "room_7",
+      "type": "arena",
+      "position": [
+        2,
+        4
+      ],
+      "size": [
+        10,
+        10
+      ]
+    },
+    {
+      "id": "room_8",
+      "type": "arena",
+      "position": [
+        39,
+        4
+      ],
+      "size": [
+        7,
+        7
+      ]
+    },
+    {
+      "id": "room_9",
+      "type": "arena",
+      "position": [
+        38,
+        16
+      ],
+      "size": [
+        7,
+        5
+      ]
+    },
+    {
+      "id": "room_10",
+      "type": "arena",
+      "position": [
+        27,
+        39
+      ],
+      "size": [
+        9,
+        6
+      ]
+    },
+    {
+      "id": "room_11",
+      "type": "arena",
+      "position": [
+        18,
+        29
+      ],
+      "size": [
+        7,
+        9
+      ]
+    },
+    {
+      "id": "room_12",
+      "type": "arena",
+      "position": [
+        25,
+        2
+      ],
+      "size": [
+        11,
+        5
+      ]
+    },
+    {
+      "id": "room_13",
+      "type": "entrance",
+      "position": [
+        16,
+        20
+      ],
+      "size": [
+        5,
+        7
+      ]
+    },
+    {
+      "id": "room_14",
+      "type": "arena",
+      "position": [
+        27,
+        14
+      ],
+      "size": [
+        6,
+        5
+      ]
+    },
+    {
+      "id": "room_15",
+      "type": "arena",
+      "position": [
+        10,
+        33
+      ],
+      "size": [
+        5,
+        5
+      ]
+    },
+    {
+      "id": "room_16",
+      "type": "arena",
+      "position": [
+        40,
+        39
+      ],
+      "size": [
+        6,
+        5
+      ]
+    },
+    {
+      "id": "room_17",
+      "type": "arena",
+      "position": [
+        14,
+        4
+      ],
+      "size": [
+        9,
+        9
+      ]
+    }
+  ],
+  "connections": [
+    [
+      "room_7",
+      "room_17"
+    ],
+    [
+      "room_3",
+      "room_13"
+    ],
+    [
+      "room_7",
+      "room_3"
+    ],
+    [
+      "room_12",
+      "room_8"
+    ],
+    [
+      "room_14",
+      "room_5"
+    ],
+    [
+      "room_14",
+      "room_9"
+    ],
+    [
+      "room_12",
+      "room_14"
+    ],
+    [
+      "room_7",
+      "room_12"
+    ],
+    [
+      "room_0",
+      "room_15"
+    ],
+    [
+      "room_0",
+      "room_11"
+    ],
+    [
+      "room_4",
+      "room_1"
+    ],
+    [
+      "room_0",
+      "room_4"
+    ],
+    [
+      "room_6",
+      "room_2"
+    ],
+    [
+      "room_10",
+      "room_16"
+    ],
+    [
+      "room_6",
+      "room_10"
+    ],
+    [
+      "room_0",
+      "room_6"
+    ],
+    [
+      "room_7",
+      "room_0"
+    ]
+  ],
+  "spawn_points": {
+    "player": [
+      74,
+      0,
+      94
+    ],
+    "boss": [
+      122,
+      0,
+      98
+    ]
+  },
+  "light_count": 6,
+  "prop_count": 113
+}

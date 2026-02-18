@@ -1,0 +1,100 @@
+{
+  "seed": 42,
+  "zone": "cavern",
+  "size": "small",
+  "difficulty": "normal",
+  "rooms": [
+    {
+      "id": "room_0",
+      "type": "treasure",
+      "position": [
+        8,
+        2
+      ],
+      "size": [
+        3,
+        4
+      ]
+    },
+    {
+      "id": "room_1",
+      "type": "boss",
+      "position": [
+        17,
+        19
+      ],
+      "size": [
+        3,
+        3
+      ]
+    },
+    {
+      "id": "room_2",
+      "type": "entrance",
+      "position": [
+        9,
+        13
+      ],
+      "size": [
+        3,
+        3
+      ]
+    },
+    {
+      "id": "room_3",
+      "type": "arena",
+      "position": [
+        3,
+        13
+      ],
+      "size": [
+        3,
+        3
+      ]
+    },
+    {
+      "id": "room_4",
+      "type": "treasure",
+      "position": [
+        18,
+        2
+      ],
+      "size": [
+        3,
+        3
+      ]
+    }
+  ],
+  "connections": [
+    [
+      "room_0",
+      "room_4"
+    ],
+    [
+      "room_3",
+      "room_2"
+    ],
+    [
+      "room_3",
+      "room_1"
+    ],
+    [
+      "room_0",
+      "room_3"
+    ]
+  ],
+  "spawn_points": {
+    "player": [
+      42,
+      0,
+      58
+    ],
+    "boss": [
+      74,
+      0,
+      82
+    ]
+  },
+  "light_count": 6,
+  "prop_count": 18
+}

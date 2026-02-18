@@ -9,6 +9,9 @@
   import ThreeScene from './lib/components/ThreeScene.svelte';
   import ThreeDOverlay from './lib/components/ThreeDOverlay.svelte';
   import ClassSelect from './lib/components/ClassSelect.svelte';
+  import BuilderSceneComponent from './lib/components/BuilderScene.svelte';
+  import BuilderOverlay from './lib/components/BuilderOverlay.svelte';
+  import BuilderPlayMode from './lib/components/BuilderPlayMode.svelte';
   import type { EncounterType } from './lib/stores/types';
   import type { PlayerClass } from './lib/stores/types';
 
@@ -17,7 +20,7 @@
     zone: string;
     apiKey: string;
     encounterType: EncounterType;
-    mode?: 'turnbased' | 'realtime' | '3d';
+    mode?: 'turnbased' | 'realtime' | '3d' | 'builder';
   } = $props();
 
   let isRealtime = $derived(mode === 'realtime');
@@ -26,6 +29,9 @@
   let ready = $state(false);
   let pointerLocked = $state(false);
   let selectedClass = $state<PlayerClass | null>(null);
+  let isBuilder = $derived(mode === 'builder');
+  let builderPlaying = $state(false);
+  let builderSceneRef: BuilderSceneComponent | null = null;
 
   async function handleClassSelect(cls: PlayerClass) {
     selectedClass = cls;
@@ -38,8 +44,25 @@
     ready = true;
   }
 
+  function handleBuilderPlay() {
+    builderPlaying = true;
+  }
+
+  function handleBuilderBack() {
+    builderPlaying = false;
+  }
+
+  function handleBuilderRebuild() {
+    if (builderSceneRef) {
+      const scene = builderSceneRef.getScene();
+      if (scene) scene.rebuildDungeon();
+    }
+  }
+
   onMount(async () => {
-    if (is3D) {
+    if (isBuilder) {
+      // Builder mode: no connection needed, handled by components
+    } else if (is3D) {
       // 3D dungeon mode: show class select first (don't connect yet)
       // Connection happens in handleClassSelect
     } else if (isRealtime) {
@@ -77,7 +100,12 @@
 </script>
 
 <div class="combat-app">
-  {#if is3D && !selectedClass}
+  {#if isBuilder && !builderPlaying}
+    <BuilderSceneComponent bind:this={builderSceneRef} />
+    <BuilderOverlay onPlay={handleBuilderPlay} onRebuild={handleBuilderRebuild} getScene={() => builderSceneRef?.getScene() ?? null} />
+  {:else if isBuilder && builderPlaying}
+    <BuilderPlayMode onBack={handleBuilderBack} />
+  {:else if is3D && !selectedClass}
     <ClassSelect onSelect={handleClassSelect} />
   {:else if is3D && selectedClass}
     <ThreeScene

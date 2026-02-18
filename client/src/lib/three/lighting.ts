@@ -6,42 +6,44 @@ export interface DungeonLighting {
   directional: THREE.DirectionalLight;
 }
 
-// Zone-specific ambient color overrides
+// Zone-specific ambient color overrides — cool desaturated blue-gray tones
 const ZONE_AMBIENT: Record<string, { color: number; intensity: number }> = {
-  the_gate:      { color: 0x9a8060, intensity: 1.4 },   // warm amber
-  tomb_halls:    { color: 0x708090, intensity: 1.2 },   // cool blue-gray
-  the_mines:     { color: 0x9a8050, intensity: 1.3 },   // earthy warm amber
-  the_web:       { color: 0x60a060, intensity: 1.1 },   // sickly green tint
-  forge_of_ruin: { color: 0xb06030, intensity: 1.4 },   // hot red-orange
-  bone_throne:   { color: 0x8060a0, intensity: 1.1 },   // corruption purple
-  abyss_bridge:  { color: 0x607090, intensity: 1.0 },   // cold blue
-  black_pit:     { color: 0x4a4a5a, intensity: 0.8 },   // dim but visible
+  the_gate:      { color: 0x7088a0, intensity: 1.5 },
+  tomb_halls:    { color: 0x6080a0, intensity: 1.4 },
+  the_mines:     { color: 0x708898, intensity: 1.5 },
+  the_web:       { color: 0x5878a0, intensity: 1.3 },
+  forge_of_ruin: { color: 0x7890a0, intensity: 1.5 },
+  bone_throne:   { color: 0x6078a0, intensity: 1.3 },
+  abyss_bridge:  { color: 0x5870a0, intensity: 1.2 },
+  black_pit:     { color: 0x506888, intensity: 1.0 },
 };
 
 export function createDungeonLighting(scene: THREE.Scene, zone: string): DungeonLighting {
-  // Ambient — warm low fill, zone-tuned
-  const zoneAmb = ZONE_AMBIENT[zone] || { color: 0x555566, intensity: 0.6 };
+  // Ambient — dim zone-tuned fill
+  const zoneAmb = ZONE_AMBIENT[zone] || { color: 0x555566, intensity: 0.4 };
   const ambient = new THREE.AmbientLight(zoneAmb.color, zoneAmb.intensity);
   scene.add(ambient);
 
-  // Directional light from above — bright overhead dungeon illumination
-  const directional = new THREE.DirectionalLight(0xaaaacc, 1.5);
+  // Directional light — cool overhead, follows player (set in DungeonScene)
+  const directional = new THREE.DirectionalLight(0x8899aa, 1.8);
   directional.position.set(0, 30, 0);
   directional.target.position.set(0, 0, 0);
   directional.castShadow = true;
-  directional.shadow.mapSize.width = 2048;
-  directional.shadow.mapSize.height = 2048;
-  directional.shadow.camera.left = -75;
-  directional.shadow.camera.right = 75;
-  directional.shadow.camera.top = 55;
-  directional.shadow.camera.bottom = -55;
+  directional.shadow.mapSize.width = 4096;
+  directional.shadow.mapSize.height = 4096;
+  directional.shadow.camera.left = -130;
+  directional.shadow.camera.right = 130;
+  directional.shadow.camera.top = 100;
+  directional.shadow.camera.bottom = -100;
   directional.shadow.camera.near = 0.5;
-  directional.shadow.camera.far = 80;
+  directional.shadow.camera.far = 120;
+  directional.shadow.bias = -0.0005;
+  directional.shadow.normalBias = 0.02;
   scene.add(directional);
   scene.add(directional.target);
 
-  // Player torch: warm ember point light following the player — large radius
-  const torch = new THREE.PointLight(0xff8833, 8.0, 100, 1.0);
+  // Player torch: warm ember point light — larger radius for bigger map
+  const torch = new THREE.PointLight(0xff8833, 8.0, 120, 1.0);
   torch.castShadow = true;
   torch.shadow.mapSize.width = 512;
   torch.shadow.mapSize.height = 512;
@@ -60,7 +62,7 @@ export function updateTorchPosition(lighting: DungeonLighting, x: number, y: num
 let flickerTime = 0;
 export function flickerTorch(lighting: DungeonLighting, dt: number) {
   flickerTime += dt;
-  const flicker = 7.5 + Math.sin(flickerTime * 8) * 0.5 + Math.sin(flickerTime * 13) * 0.3;
+  const flicker = 10.0 + Math.sin(flickerTime * 8) * 0.6 + Math.sin(flickerTime * 13) * 0.4;
   lighting.torch.intensity = flicker;
 }
 
@@ -74,14 +76,14 @@ export function updateZoneLighting(lighting: DungeonLighting, zone: string) {
 
 export function getZoneFogConfig(zone: string): { color: number; density: number } {
   const FOG_CONFIGS: Record<string, { color: number; density: number }> = {
-    the_gate:      { color: 0x0a0a0f, density: 0.008 },
-    tomb_halls:    { color: 0x0a0a0f, density: 0.012 },
-    the_mines:     { color: 0x0a0a0f, density: 0.014 },
-    the_web:       { color: 0x0a0a0f, density: 0.015 },
-    forge_of_ruin: { color: 0x0a0a0f, density: 0.014 },
-    bone_throne:   { color: 0x0a0a0f, density: 0.015 },
-    abyss_bridge:  { color: 0x0a0a0f, density: 0.018 },
-    black_pit:     { color: 0x0a0a0f, density: 0.025 },
+    the_gate:      { color: 0x0a0e14, density: 0.006 },
+    tomb_halls:    { color: 0x0a0e14, density: 0.008 },
+    the_mines:     { color: 0x0a0e12, density: 0.010 },
+    the_web:       { color: 0x0a0e14, density: 0.012 },
+    forge_of_ruin: { color: 0x0c0e14, density: 0.010 },
+    bone_throne:   { color: 0x0a0c14, density: 0.012 },
+    abyss_bridge:  { color: 0x080c12, density: 0.014 },
+    black_pit:     { color: 0x080a10, density: 0.020 },
   };
-  return FOG_CONFIGS[zone] || { color: 0x0a0a0f, density: 0.012 };
+  return FOG_CONFIGS[zone] || { color: 0x0a0e14, density: 0.010 };
 }

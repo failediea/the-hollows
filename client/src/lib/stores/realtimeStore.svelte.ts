@@ -1,4 +1,4 @@
-import type { Stance, ElementType, EnemyArchetype, Rewards, PlayerClass } from './types';
+import type { Stance, ElementType, EnemyArchetype, Rewards, PlayerClass, GroundLootItem } from './types';
 
 export interface RealtimePlayerState {
   x: number;
@@ -14,6 +14,8 @@ export interface RealtimePlayerState {
   attackCooldown: number;
   playerClass?: PlayerClass;
   abilityCooldowns?: Record<string, number>;
+  dashCooldown?: number;
+  stanceCooldown?: number;
 }
 
 export interface RealtimeProjectile {
@@ -53,22 +55,33 @@ export interface RealtimeResourceState {
 }
 
 export interface RealtimeEvent {
-  type: 'damage' | 'death' | 'dodge' | 'crit' | 'block' | 'effect' | 'heal' | 'gather' | 'gather_start' | 'gather_cancel';
+  type: 'damage' | 'death' | 'dodge' | 'crit' | 'block' | 'effect' | 'heal' | 'gather' | 'gather_start' | 'gather_cancel' | 'kill_reward' | 'loot_drop' | 'loot_pickup' | 'level_up';
   targetId?: string;
   sourceId?: string;
   value?: number;
   x?: number;
   y?: number;
   text?: string;
+  xp?: number;
+  gold?: number;
+  itemName?: string;
+  rarity?: string;
+  newLevel?: number;
+  element?: ElementType;
+  itemCode?: string;
 }
 
 export interface ArenaData {
   width: number;
   height: number;
   walls: { x: number; y: number; w: number; h: number }[];
+  exitPosition?: { x: number; y: number };
 }
 
 export type RealtimeStatus = 'connecting' | 'active' | 'victory' | 'defeat' | 'disconnected';
+
+// Event types that go to the UI overlay (non-destructive, separate from 3D scene events)
+const UI_EVENT_TYPES: Set<string> = new Set(['kill_reward', 'loot_drop', 'loot_pickup', 'level_up']);
 
 interface RealtimeState {
   connected: boolean;
@@ -80,10 +93,18 @@ interface RealtimeState {
   projectiles: RealtimeProjectile[];
   arena: ArenaData | null;
   events: RealtimeEvent[];
+  uiEvents: RealtimeEvent[];
   rewards: Rewards | null;
   tick: number;
   zone: string;
   playerClass: PlayerClass | null;
+  groundLoot: GroundLootItem[];
+  playerLevel: number;
+  playerXp: number;
+  playerXpToNext: number;
+  targetEnemyId: string | null;
+  fowGrid: Uint8Array | null;
+  fowGridW: number;
 }
 
 function createRealtimeStore() {
@@ -97,10 +118,18 @@ function createRealtimeStore() {
     projectiles: [],
     arena: null,
     events: [],
+    uiEvents: [],
     rewards: null,
     tick: 0,
     zone: '',
     playerClass: null,
+    groundLoot: [],
+    playerLevel: 1,
+    playerXp: 0,
+    playerXpToNext: 110,
+    targetEnemyId: null,
+    fowGrid: null,
+    fowGridW: 0,
   });
 
   let ws: WebSocket | null = null;
@@ -165,11 +194,20 @@ function createRealtimeStore() {
         if (msg.data.projectiles) state.projectiles = msg.data.projectiles;
         if (msg.data.arena) state.arena = msg.data.arena;
         if (msg.data.zone) state.zone = msg.data.zone;
+        if (msg.data.groundLoot) state.groundLoot = msg.data.groundLoot;
+        if (msg.data.playerLevel !== undefined) state.playerLevel = msg.data.playerLevel;
+        if (msg.data.playerXp !== undefined) state.playerXp = msg.data.playerXp;
+        if (msg.data.playerXpToNext !== undefined) state.playerXpToNext = msg.data.playerXpToNext;
         state.tick = msg.data.tick;
         break;
-      case 'event':
-        state.events = [...state.events, { type: msg.event, ...msg.data }];
+      case 'event': {
+        const event: RealtimeEvent = { type: msg.event, ...msg.data };
+        state.events = [...state.events, event];
+        if (UI_EVENT_TYPES.has(event.type)) {
+          state.uiEvents = [...state.uiEvents, event];
+        }
         break;
+      }
       case 'end':
         state.status = msg.data.result === 'victory' ? 'victory' : 'defeat';
         state.rewards = msg.data.rewards || null;
@@ -188,6 +226,7 @@ function createRealtimeStore() {
     stanceChange: Stance | null;
     gather?: boolean;
     targetId?: string;
+    dash?: boolean;
   }) {
     if (demoSession) {
       demoSession.receiveInput(input);
@@ -204,7 +243,18 @@ function createRealtimeStore() {
     return events;
   }
 
-  async function connectDemo(zone = 'tomb_halls', playerClass?: PlayerClass) {
+  function consumeUiEvents(): RealtimeEvent[] {
+    const events = [...state.uiEvents];
+    state.uiEvents = [];
+    return events;
+  }
+
+  async function connectDemo(zone = 'tomb_halls', playerClass?: PlayerClass, customArena?: {
+    arena: ArenaData;
+    spawnPosition: { x: number; y: number };
+    enemies?: Array<{ name: string; archetype: string; element: string; x: number; y: number }>;
+    resources?: Array<{ resourceId: string; name: string; rarity: string; x: number; y: number }>;
+  }) {
     state.sessionId = 'demo';
     state.status = 'connecting';
     if (playerClass) state.playerClass = playerClass;
@@ -219,26 +269,26 @@ function createRealtimeStore() {
         if (data.projectiles) state.projectiles = data.projectiles;
         if (data.arena) state.arena = data.arena;
         if (data.zone) state.zone = data.zone;
+        state.groundLoot = data.groundLoot || [];
+        if (data.playerLevel !== undefined) state.playerLevel = data.playerLevel;
+        if (data.playerXp !== undefined) state.playerXp = data.playerXp;
+        if (data.playerXpToNext !== undefined) state.playerXpToNext = data.playerXpToNext;
         state.tick = data.tick;
         notifySubscribers();
       },
-      onEvent: (event: any) => {
+      onEvent: (event: RealtimeEvent) => {
         state.events = [...state.events, event];
-        notifySubscribers();
-      },
-      onEnd: (result: 'victory' | 'defeat') => {
-        state.status = result;
-        if (result === 'victory') {
-          state.rewards = {
-            xpGained: 150,
-            goldGained: 45,
-            itemsDropped: ['Tomb Shard'],
-            xpCapped: false,
-          };
+        if (UI_EVENT_TYPES.has(event.type)) {
+          state.uiEvents = [...state.uiEvents, event];
         }
         notifySubscribers();
       },
-    }, zone, playerClass);
+      onEnd: (result: 'victory' | 'defeat', rewards?: Rewards) => {
+        state.status = result;
+        if (rewards) state.rewards = rewards;
+        notifySubscribers();
+      },
+    }, zone, playerClass, customArena);
 
     state.connected = true;
     state.status = 'active';
@@ -268,6 +318,21 @@ function createRealtimeStore() {
     }, '*');
   }
 
+  function setTargetEnemyId(id: string | null) {
+    state.targetEnemyId = id;
+  }
+
+  function setFowGrid(grid: Uint8Array | null, gridW: number) {
+    state.fowGrid = grid;
+    state.fowGridW = gridW;
+  }
+
+  function sendEquipBonuses(bonuses: { atk: number; def: number; hp: number }) {
+    if (demoSession && demoSession.setEquipBonuses) {
+      demoSession.setEquipBonuses(bonuses);
+    }
+  }
+
   return {
     get state() { return state; },
     subscribe,
@@ -275,8 +340,12 @@ function createRealtimeStore() {
     connectDemo,
     sendInput,
     consumeEvents,
+    consumeUiEvents,
     disconnect,
     closeCombat,
+    setTargetEnemyId,
+    setFowGrid,
+    sendEquipBonuses,
   };
 }
 

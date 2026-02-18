@@ -32,7 +32,7 @@
       class="bar-fill"
       style="width: {pct}%; background: {barGradient}"
     ></div>
-    <span class="bar-text" style="font-size: {fontSize}">{clampedValue} / {clampedMax}</span>
+    <span class="bar-text" style="font-size: {fontSize}">{Math.round(clampedValue)} / {Math.round(clampedMax)}</span>
   </div>
 </div>
 

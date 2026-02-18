@@ -1,0 +1,228 @@
+{
+  "seed": 7777,
+  "zone": "crypt",
+  "size": "medium",
+  "difficulty": "nightmare",
+  "rooms": [
+    {
+      "id": "room_0",
+      "type": "treasure",
+      "position": [
+        30,
+        18
+      ],
+      "size": [
+        4,
+        4
+      ]
+    },
+    {
+      "id": "room_1",
+      "type": "arena",
+      "position": [
+        3,
+        2
+      ],
+      "size": [
+        7,
+        5
+      ]
+    },
+    {
+      "id": "room_2",
+      "type": "arena",
+      "position": [
+        10,
+        9
+      ],
+      "size": [
+        8,
+        5
+      ]
+    },
+    {
+      "id": "room_3",
+      "type": "shrine",
+      "position": [
+        12,
+        2
+      ],
+      "size": [
+        4,
+        5
+      ]
+    },
+    {
+      "id": "room_4",
+      "type": "entrance",
+      "position": [
+        14,
+        17
+      ],
+      "size": [
+        4,
+        8
+      ]
+    },
+    {
+      "id": "room_5",
+      "type": "arena",
+      "position": [
+        21,
+        28
+      ],
+      "size": [
+        4,
+        6
+      ]
+    },
+    {
+      "id": "room_6",
+      "type": "arena",
+      "position": [
+        21,
+        2
+      ],
+      "size": [
+        6,
+        4
+      ]
+    },
+    {
+      "id": "room_7",
+      "type": "arena",
+      "position": [
+        4,
+        16
+      ],
+      "size": [
+        7,
+        8
+      ]
+    },
+    {
+      "id": "room_8",
+      "type": "boss",
+      "position": [
+        20,
+        8
+      ],
+      "size": [
+        5,
+        6
+      ]
+    },
+    {
+      "id": "room_9",
+      "type": "treasure",
+      "position": [
+        12,
+        28
+      ],
+      "size": [
+        5,
+        4
+      ]
+    },
+    {
+      "id": "room_10",
+      "type": "arena",
+      "position": [
+        21,
+        20
+      ],
+      "size": [
+        5,
+        4
+      ]
+    },
+    {
+      "id": "room_11",
+      "type": "arena",
+      "position": [
+        4,
+        30
+      ],
+      "size": [
+        5,
+        4
+      ]
+    },
+    {
+      "id": "room_12",
+      "type": "arena",
+      "position": [
+        27,
+        27
+      ],
+      "size": [
+        5,
+        5
+      ]
+    }
+  ],
+  "connections": [
+    [
+      "room_1",
+      "room_3"
+    ],
+    [
+      "room_1",
+      "room_2"
+    ],
+    [
+      "room_6",
+      "room_8"
+    ],
+    [
+      "room_1",
+      "room_6"
+    ],
+    [
+      "room_7",
+      "room_4"
+    ],
+    [
+      "room_11",
+      "room_9"
+    ],
+    [
+      "room_7",
+      "room_11"
+    ],
+    [
+      "room_10",
+      "room_0"
+    ],
+    [
+      "room_5",
+      "room_12"
+    ],
+    [
+      "room_10",
+      "room_5"
+    ],
+    [
+      "room_7",
+      "room_10"
+    ],
+    [
+      "room_1",
+      "room_7"
+    ]
+  ],
+  "spawn_points": {
+    "player": [
+      66,
+      0,
+      86
+    ],
+    "boss": [
+      90,
+      0,
+      46
+    ]
+  },
+  "light_count": 6,
+  "prop_count": 79
+}

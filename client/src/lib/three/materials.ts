@@ -9,73 +9,73 @@ export interface ZoneTheme {
   fogColor: number;
 }
 
-// The Hollows palette — dark fantasy with warm ember/bone/gold accents
-// Key tokens: void-black #0a0a0f, deep-black #12121a, stone-gray #1a1a24,
-//   ember-orange #ff6b35, flame-red #ff3333, gold #ffd700, bone-white #e8dcc4
+// The Hollows palette — cool desaturated blue-grays with subtle warm dirt accents
+// VFX (fire, lightning, magic) provide the only saturated color in the scene
+// Fog fades to cool cyan-blue for depth
 const ZONE_THEMES: Record<string, ZoneTheme> = {
   the_gate: {
-    wallColor: 0x9a8060,    // warm golden sandstone
-    wallEmissive: 0x2a1e10,
-    floorColor: 0x6a5a48,   // dark warm stone
-    floorEmissive: 0x1a1408,
-    ambientColor: 0x342a20,
-    fogColor: 0x0a0a0f,
+    wallColor: 0x323840,    // steel-slate with hint of warmth
+    wallEmissive: 0x0c0e14,
+    floorColor: 0x222830,   // dark charcoal-blue
+    floorEmissive: 0x080a0e,
+    ambientColor: 0x1a2028,
+    fogColor: 0x0a0e14,
   },
   tomb_halls: {
-    wallColor: 0x7a7080,    // cool blue-gray stone
-    wallEmissive: 0x141420,
-    floorColor: 0x4a4450,   // dark cool stone floor
-    floorEmissive: 0x0c0c14,
-    ambientColor: 0x2a2430,
-    fogColor: 0x0a0a0f,
+    wallColor: 0x2a2e38,    // cool steel-slate
+    wallEmissive: 0x0a0c12,
+    floorColor: 0x1a1d24,   // dark charcoal-blue
+    floorEmissive: 0x080a0e,
+    ambientColor: 0x181c24,
+    fogColor: 0x0a0e14,
   },
   the_mines: {
-    wallColor: 0x9a7840,    // rich earthy amber rock
-    wallEmissive: 0x2a1e08,
-    floorColor: 0x6a5430,   // packed amber dirt
-    floorEmissive: 0x1a1406,
-    ambientColor: 0x382818,
-    fogColor: 0x0a0a0f,
+    wallColor: 0x303438,    // slate with subtle warm grime
+    wallEmissive: 0x0c0e10,
+    floorColor: 0x1e2228,   // dark slate with dirt accent
+    floorEmissive: 0x0a0c0e,
+    ambientColor: 0x1c2026,
+    fogColor: 0x0a0e12,
   },
   the_web: {
-    wallColor: 0x5a8a5a,    // vivid sickly green stone
-    wallEmissive: 0x0e220e,
-    floorColor: 0x384838,   // dark green stone
-    floorEmissive: 0x0a180a,
-    ambientColor: 0x1e2a1e,
-    fogColor: 0x0a0a0f,
+    wallColor: 0x282e34,    // cooler blue-slate
+    wallEmissive: 0x0a0e12,
+    floorColor: 0x1c2228,   // deep blue-charcoal
+    floorEmissive: 0x080c10,
+    ambientColor: 0x182024,
+    fogColor: 0x0a0e14,
   },
   forge_of_ruin: {
-    wallColor: 0xaa5830,    // hot orange-red volcanic stone
-    wallEmissive: 0x331808,
-    floorColor: 0x7a3820,   // charred ground
-    floorEmissive: 0x1a0e04,
-    ambientColor: 0x3a1c0a,
-    fogColor: 0x0a0a0f,
+    wallColor: 0x343840,    // warm-tinged steel slate (grime)
+    wallEmissive: 0x0e1014,
+    floorColor: 0x252a32,   // slate with warm undertone
+    floorEmissive: 0x0a0c10,
+    ambientColor: 0x1e2228,
+    fogColor: 0x0c0e14,
   },
   bone_throne: {
-    wallColor: 0x8a58b0,    // deep vibrant purple
-    wallEmissive: 0x200e38,
-    floorColor: 0x503870,   // deep purple stone
-    floorEmissive: 0x100820,
-    ambientColor: 0x201838,
-    fogColor: 0x0a0a0f,
+    wallColor: 0x2c3038,    // cool dark slate
+    wallEmissive: 0x0a0c14,
+    floorColor: 0x1c2028,   // deep charcoal-blue
+    floorEmissive: 0x080a10,
+    ambientColor: 0x181c26,
+    fogColor: 0x0a0c14,
   },
   abyss_bridge: {
-    wallColor: 0x5a6a7a,    // cold steel blue
-    wallEmissive: 0x0e1420,
-    floorColor: 0x3a4454,   // dark steel floor
-    floorEmissive: 0x080c14,
-    ambientColor: 0x14141c,
-    fogColor: 0x0a0a0f,
+    wallColor: 0x262c34,    // darker steel-blue
+    wallEmissive: 0x0a0c10,
+    floorColor: 0x1a2028,   // deep dark slate
+    floorEmissive: 0x080a0e,
+    ambientColor: 0x141a22,
+    fogColor: 0x080c12,
   },
   black_pit: {
-    wallColor: 0x4a4a58,    // deep obsidian with faint void glow
-    wallEmissive: 0x0e0a14,
-    floorColor: 0x302e3a,   // abyssal floor
-    floorEmissive: 0x08060c,
-    ambientColor: 0x0e0e14,
-    fogColor: 0x0a0a0f,
+    wallColor: 0x222830,    // darkest slate
+    wallEmissive: 0x080a0e,
+    floorColor: 0x161a22,   // near-black blue
+    floorEmissive: 0x06080c,
+    ambientColor: 0x101418,
+    fogColor: 0x080a10,
   },
 };
 
@@ -90,7 +90,7 @@ export function createWallMaterial(zone: string): THREE.MeshStandardMaterial {
   return new THREE.MeshStandardMaterial({
     color: theme.wallColor,
     emissive: theme.wallEmissive,
-    emissiveIntensity: 0.4,
+    emissiveIntensity: 0.6,
     roughness: 0.85,
     metalness: 0.05,
   });
@@ -101,7 +101,7 @@ export function createFloorMaterial(zone: string): THREE.MeshStandardMaterial {
   return new THREE.MeshStandardMaterial({
     color: theme.floorColor,
     emissive: theme.floorEmissive,
-    emissiveIntensity: 0.3,
+    emissiveIntensity: 0.4,
     roughness: 0.95,
     metalness: 0.0,
     side: THREE.DoubleSide,
@@ -223,14 +223,14 @@ export function createResourceMaterial(resourceId: string): THREE.MeshStandardMa
 export function createFogConfig(zone: string): { color: number; density: number } {
   const theme = getZoneTheme(zone);
   const FOG_DENSITIES: Record<string, number> = {
-    the_gate: 0.02,
-    tomb_halls: 0.035,
-    the_mines: 0.04,
-    the_web: 0.045,
-    forge_of_ruin: 0.04,
-    bone_throne: 0.045,
-    abyss_bridge: 0.05,
-    black_pit: 0.08,
+    the_gate: 0.012,
+    tomb_halls: 0.018,
+    the_mines: 0.022,
+    the_web: 0.025,
+    forge_of_ruin: 0.022,
+    bone_throne: 0.025,
+    abyss_bridge: 0.028,
+    black_pit: 0.04,
   };
   return {
     color: theme.fogColor,

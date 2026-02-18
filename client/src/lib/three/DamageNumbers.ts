@@ -9,7 +9,7 @@ interface FloatingNumber {
   element: HTMLDivElement;
 }
 
-type DamageType = 'damage' | 'crit' | 'heal' | 'fire' | 'ice' | 'shadow' | 'dodge' | 'block' | 'poison';
+type DamageType = 'damage' | 'crit' | 'heal' | 'fire' | 'ice' | 'shadow' | 'dodge' | 'block' | 'poison' | 'xp' | 'gold';
 
 interface DamageStyle {
   color: string;
@@ -29,6 +29,8 @@ const DAMAGE_STYLES: Record<DamageType, DamageStyle> = {
   poison:  { color: '#4ade80', fontSize: '14px', format: (v) => `${v}`, italic: true },
   dodge:   { color: '#888888', fontSize: '16px', format: () => 'DODGE', italic: true },
   block:   { color: '#c0c0c0', fontSize: '16px', format: () => 'BLOCK', bold: true },
+  xp:      { color: '#ffd700', fontSize: '14px', format: (v) => `+${v} XP`, bold: true },
+  gold:    { color: '#ffaa00', fontSize: '14px', format: (v) => `+${v}g` },
 };
 
 export class DamageNumberManager {

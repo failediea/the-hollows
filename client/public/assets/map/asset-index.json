@@ -1,0 +1,72 @@
+{
+  "version": "1.0",
+  "assets": {
+    "wall": {
+      "file": "wall.glb",
+      "format": "glTF 2.0 Binary",
+      "fileSize": 6923780,
+      "generator": "pygltflib@v1.16.1",
+      "geometry": {
+        "vertices": 2216,
+        "indices": 4494,
+        "triangles": 1498,
+        "boundingBox": {
+          "min": [-0.633, -0.958, -0.639],
+          "max": [0.638, 0.962, 0.639]
+        },
+        "dimensions": {
+          "width": 1.271,
+          "height": 1.920,
+          "depth": 1.278
+        }
+      },
+      "material": {
+        "type": "pbrMetallicRoughness",
+        "alphaMode": "OPAQUE",
+        "doubleSided": true,
+        "baseColorFactor": [1, 1, 1, 1],
+        "metallicFactor": 1,
+        "roughnessFactor": 1,
+        "textures": {
+          "baseColor": {
+            "index": 0,
+            "mimeType": "image/jpeg",
+            "sizeBytes": 2122141,
+            "wrapS": "REPEAT",
+            "wrapT": "REPEAT",
+            "minFilter": "LINEAR_MIPMAP_LINEAR",
+            "magFilter": "LINEAR"
+          },
+          "metallicRoughness": {
+            "index": 1,
+            "mimeType": "image/jpeg",
+            "sizeBytes": 1829364,
+            "wrapS": "REPEAT",
+            "wrapT": "REPEAT",
+            "minFilter": "LINEAR_MIPMAP_LINEAR",
+            "magFilter": "LINEAR"
+          },
+          "normal": {
+            "index": 2,
+            "mimeType": "image/jpeg",
+            "sizeBytes": 2881092,
+            "wrapS": "REPEAT",
+            "wrapT": "REPEAT",
+            "minFilter": "LINEAR_MIPMAP_LINEAR",
+            "magFilter": "LINEAR"
+          }
+        }
+      },
+      "scene": {
+        "nodes": 1,
+        "rootTransform": "identity"
+      },
+      "usage": {
+        "role": "dungeon_wall_tile",
+        "tileStrategy": "uv_repeat",
+        "tileSize": 1.5,
+        "notes": "Textures tile via REPEAT wrapping. Apply to BoxGeometry walls with UV scaling based on wall dimensions. Material color can be tinted per-zone."
+      }
+    }
+  }
+}

@@ -219,11 +219,23 @@ app.get('/combat/sprites/*', (c) => {
 });
 
 app.get('/combat/assets/*', (c) => {
-  const assetPath = c.req.path.replace('/combat/assets/', '');
+  const assetPath = decodeURIComponent(c.req.path.replace('/combat/assets/', ''));
   const fullPath = path.join(combatClientDir, 'assets', assetPath);
   if (!fs.existsSync(fullPath)) return c.notFound();
   const ext = path.extname(fullPath).toLowerCase();
-  const mimeMap: Record<string, string> = { '.js': 'application/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.svg': 'image/svg+xml', '.woff2': 'font/woff2' };
+  const mimeMap: Record<string, string> = { '.js': 'application/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg', '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.gltf': 'model/gltf+json', '.glb': 'model/gltf-binary', '.bin': 'application/octet-stream' };
+  c.header('Content-Type', mimeMap[ext] || 'application/octet-stream');
+  c.header('Cache-Control', 'public, max-age=86400');
+  return c.body(fs.readFileSync(fullPath));
+});
+
+// Serve GLTF models for combat client
+app.get('/combat/models/*', (c) => {
+  const assetPath = c.req.path.replace('/combat/models/', '');
+  const fullPath = path.join(combatClientDir, 'models', assetPath);
+  if (!fs.existsSync(fullPath)) return c.notFound();
+  const ext = path.extname(fullPath).toLowerCase();
+  const mimeMap: Record<string, string> = { '.gltf': 'model/gltf+json', '.glb': 'model/gltf-binary', '.bin': 'application/octet-stream', '.png': 'image/png', '.jpg': 'image/jpeg' };
   c.header('Content-Type', mimeMap[ext] || 'application/octet-stream');
   c.header('Cache-Control', 'public, max-age=86400');
   return c.body(fs.readFileSync(fullPath));

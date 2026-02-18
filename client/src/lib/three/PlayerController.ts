@@ -19,17 +19,25 @@ export class PlayerController {
   private onMouseDown: (e: MouseEvent) => void;
   private onMouseUp: (e: MouseEvent) => void;
   private onContextMenu: (e: MouseEvent) => void;
+  private onWheel: (e: WheelEvent) => void;
   private domElement: HTMLElement;
 
   // Camera follows player from above
-  private static readonly CAM_HEIGHT = 22;
-  private static readonly CAM_TILT = 14; // offset on Z so camera looks slightly forward
+  private static readonly CAM_HEIGHT_DEFAULT = 22;
+  private static readonly CAM_HEIGHT_MIN = 10;
+  private static readonly CAM_HEIGHT_MAX = 50;
+  private static readonly CAM_TILT_RATIO = 14 / 22; // tilt scales with height
   private static readonly CAM_PITCH = -Math.PI / 3; // ~60 degrees down
+
+  private camHeight = PlayerController.CAM_HEIGHT_DEFAULT;
 
   // Lerped camera target (server-authoritative player position)
   private targetPosition = new THREE.Vector3(0, 0, 0);
   private currentPosition = new THREE.Vector3(0, 0, 0);
   private initialized = false;
+
+  // Dash
+  private pendingDash = false;
 
   // Click-to-move
   private clickTarget: THREE.Vector3 | null = null;
@@ -41,6 +49,9 @@ export class PlayerController {
   private entityManager: EntityManager | null = null;
   private targetEnemyId: string | null = null;
   private static readonly MELEE_RANGE = 2.5; // world units (~25 arena px)
+
+  // Auto-chase: stop distance in world units (set from class attackRange)
+  private chaseStopRange = 4.5; // default ~45 arena px
 
   constructor(camera: THREE.PerspectiveCamera, domElement: HTMLElement) {
     this.camera = camera;
@@ -65,6 +76,9 @@ export class PlayerController {
       if (e.code === 'Digit3') this.sendStanceChange('defensive');
       if (e.code === 'Digit4') this.sendStanceChange('evasive');
 
+      // Dash
+      if (e.code === 'Space') { e.preventDefault(); this.pendingDash = true; }
+
       // Abilities
       if (e.code === 'KeyQ') this.sendAbility(0);
       if (e.code === 'KeyE') this.sendAbility(1);
@@ -78,7 +92,7 @@ export class PlayerController {
     // Left-click: move to point, Right-click: target enemy
     this.onMouseDown = (e: MouseEvent) => {
       if (e.button === 0) {
-        this.targetEnemyId = null;
+        // Left-click does NOT clear target — only right-click changes target
         this.handleClickMove(e);
       } else if (e.button === 2) {
         this.handleRightClick(e);
@@ -92,11 +106,20 @@ export class PlayerController {
       e.preventDefault();
     };
 
+    // Zoom in/out with scroll wheel
+    this.onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const zoomSpeed = 2;
+      this.camHeight += (e.deltaY > 0 ? zoomSpeed : -zoomSpeed);
+      this.camHeight = Math.max(PlayerController.CAM_HEIGHT_MIN, Math.min(PlayerController.CAM_HEIGHT_MAX, this.camHeight));
+    };
+
     window.addEventListener('keydown', this.onKeyDown);
     window.addEventListener('keyup', this.onKeyUp);
     domElement.addEventListener('mousedown', this.onMouseDown);
     domElement.addEventListener('mouseup', this.onMouseUp);
     domElement.addEventListener('contextmenu', this.onContextMenu);
+    domElement.addEventListener('wheel', this.onWheel, { passive: false });
 
     // Mark as "locked" immediately for HUD (no pointer lock in top-down)
     setTimeout(() => this.stateCallback?.({ pointerLocked: true }), 100);
@@ -110,6 +133,12 @@ export class PlayerController {
 
   setEntityManager(em: EntityManager) {
     this.entityManager = em;
+  }
+
+  /** Set the auto-chase stop distance from the class's attack range (arena px). */
+  setAttackRange(arenaRange: number) {
+    // Convert arena px to world units (ARENA_SCALE = 0.1) with slight buffer
+    this.chaseStopRange = arenaRange * 0.1 * 0.85;
   }
 
   get targetedEnemyId(): string | null {
@@ -135,9 +164,8 @@ export class PlayerController {
     if (hit) {
       this.targetEnemyId = hit.id;
       this.clickTarget = null; // cancel click-to-move
-    } else {
-      this.targetEnemyId = null;
     }
+    // Right-click on empty space does NOT clear target
   }
 
   private handleClickMove(e: MouseEvent) {
@@ -164,10 +192,27 @@ export class PlayerController {
     if (this.keys['KeyA'] || this.keys['ArrowLeft']) moveX = -1;
     if (this.keys['KeyD'] || this.keys['ArrowRight']) moveX = 1;
 
-    // Target enemy: clear if dead, no chasing — attack is handled by the server
+    // Target enemy: clear if dead
     if (this.targetEnemyId && this.entityManager) {
       if (!this.entityManager.getEnemyPosition(this.targetEnemyId)) {
         this.targetEnemyId = null;
+      }
+    }
+
+    // Auto-chase: if no keyboard input, no click target, and we have a live target, chase it
+    if (moveX === 0 && moveZ === 0 && !this.clickTarget && this.targetEnemyId && this.entityManager) {
+      const enemyPos = this.entityManager.getEnemyPosition(this.targetEnemyId);
+      if (enemyPos) {
+        const dx = enemyPos.x - this.currentPosition.x;
+        const dz = enemyPos.z - this.currentPosition.z;
+        const dist = Math.sqrt(dx * dx + dz * dz);
+
+        if (dist > this.chaseStopRange) {
+          // Move toward enemy, stop at attack range
+          moveX = dx / dist;
+          moveZ = dz / dist;
+        }
+        // If within range: stop moving, auto-attack is already handled by attacking flag below
       }
     }
 
@@ -198,12 +243,14 @@ export class PlayerController {
     realtimeStore.sendInput({
       moveX,
       moveY: moveZ,
-      attacking: true, // auto-attack like ArenaScene
+      attacking: this.targetEnemyId !== null, // only attack when right-click target selected
       abilitySlot: null,
       stanceChange: null,
       gather: this.keys['KeyF'] || false,
       targetId: this.targetEnemyId || undefined,
+      dash: this.pendingDash,
     });
+    this.pendingDash = false;
   }
 
   private sendStanceChange(stance: Stance) {
@@ -245,16 +292,22 @@ export class PlayerController {
   }
 
   private syncCamera() {
+    const tilt = this.camHeight * PlayerController.CAM_TILT_RATIO;
     this.camera.position.set(
       this.currentPosition.x,
-      PlayerController.CAM_HEIGHT,
-      this.currentPosition.z + PlayerController.CAM_TILT,
+      this.camHeight,
+      this.currentPosition.z + tilt,
     );
   }
 
   /** The interpolated world position (single source of truth for camera + mesh). */
   get worldPosition(): THREE.Vector3 {
     return this.currentPosition;
+  }
+
+  /** Expose current click-to-move target for visual feedback (decal). */
+  get clickTargetPosition(): THREE.Vector3 | null {
+    return this.clickTarget;
   }
 
   get isLocked(): boolean {
@@ -268,5 +321,6 @@ export class PlayerController {
     this.domElement.removeEventListener('mousedown', this.onMouseDown);
     this.domElement.removeEventListener('mouseup', this.onMouseUp);
     this.domElement.removeEventListener('contextmenu', this.onContextMenu);
+    this.domElement.removeEventListener('wheel', this.onWheel);
   }
 }

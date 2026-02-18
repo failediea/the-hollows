@@ -1,11 +1,16 @@
 import type { ArenaData, RealtimePlayerState, RealtimeEnemyState, RealtimeResourceState, RealtimeEvent, RealtimeProjectile } from '../stores/realtimeStore.svelte';
-import type { Stance, PlayerClass, ClassAbilityDef, ElementType } from '../stores/types';
+import type { Stance, PlayerClass, ClassAbilityDef, ElementType, GroundLootItem, Rewards } from '../stores/types';
 import { CLASS_DEFS } from './ClassDefs';
+import { ZONES, type Mob } from '../data/zones';
+import { rollLoot, type LootDrop } from '../data/loot';
+import { ITEM_MAP } from '../data/items';
+import { xpRequiredForLevel, getLevelForXp, calculateXpPenalty } from '../data/progression';
+import { generateProceduralDungeon, type DungeonLayout, type Room } from './DungeonGenerator';
 
-// Arena is 1400x1000
-const ARENA_W = 1400;
-const ARENA_H = 1000;
-const PLAYER_SPEED = 3.5;
+// Arena is 3600x2700 (1.5x each dimension)
+const ARENA_W = 3600;
+const ARENA_H = 2700;
+const PLAYER_SPEED = 2.2;
 const ENEMY_SPEED = 1.5;
 const CHASE_SPEED = 2.5;
 const AGGRO_RANGE = 120;
@@ -13,6 +18,11 @@ const ENEMY_ATTACK_RANGE = 45;
 const ENEMY_ATTACK_COOLDOWN = 12;
 const ENEMY_ATTACK_DMG = 8;
 const WALL_MARGIN = 14;
+const DASH_COOLDOWN = 300;  // 15s at 20 ticks/s
+const DASH_DURATION = 6;    // 300ms
+const DASH_SPEED_MULT = 4;
+const LEASH_DISTANCE = 250;
+const STANCE_COOLDOWN = 40;  // 2s at 20 ticks/s
 
 interface DemoEnemy {
   state: RealtimeEnemyState;
@@ -24,6 +34,7 @@ interface DemoEnemy {
   taunted: boolean;
   tauntTimer: number;
   dots: DotEffect[];
+  mob?: Mob;
 }
 
 interface DemoInput {
@@ -34,6 +45,7 @@ interface DemoInput {
   stanceChange: Stance | null;
   gather?: boolean;
   targetId?: string;
+  dash?: boolean;
 }
 
 interface Projectile {
@@ -76,140 +88,64 @@ export interface DemoCallbacks {
     enemies: RealtimeEnemyState[];
     resources: RealtimeResourceState[];
     projectiles: RealtimeProjectile[];
+    groundLoot: GroundLootItem[];
     arena: ArenaData;
     zone: string;
     tick: number;
+    playerLevel: number;
+    playerXp: number;
+    playerXpToNext: number;
   }) => void;
   onEvent: (event: RealtimeEvent) => void;
-  onEnd: (result: 'victory' | 'defeat') => void;
+  onEnd: (result: 'victory' | 'defeat', rewards?: Rewards) => void;
 }
 
-export function generateDungeonArena(): ArenaData {
-  const walls: ArenaData['walls'] = [];
-
-  // ============ GRAND ENTRANCE HALL (center) ============
-  // Open area around player spawn (700, 500) with pillars
-  walls.push({ x: 640, y: 440, w: 24, h: 24 });  // pillar
-  walls.push({ x: 740, y: 440, w: 24, h: 24 });  // pillar
-  walls.push({ x: 640, y: 560, w: 24, h: 24 });  // pillar
-  walls.push({ x: 740, y: 560, w: 24, h: 24 });  // pillar
-
-  // ============ NORTH WING — Tomb Chamber ============
-  // Walled room top-center, opening south
-  walls.push({ x: 480, y: 80, w: 440, h: 20 });   // north wall
-  walls.push({ x: 480, y: 80, w: 20, h: 260 });   // west wall
-  walls.push({ x: 900, y: 80, w: 20, h: 260 });   // east wall
-  walls.push({ x: 480, y: 320, w: 160, h: 20 });  // south wall left
-  walls.push({ x: 760, y: 320, w: 160, h: 20 });  // south wall right (gap in middle for entrance)
-  // Interior pillars
-  walls.push({ x: 560, y: 160, w: 20, h: 20 });
-  walls.push({ x: 820, y: 160, w: 20, h: 20 });
-  walls.push({ x: 560, y: 260, w: 20, h: 20 });
-  walls.push({ x: 820, y: 260, w: 20, h: 20 });
-  // Sarcophagus (central block)
-  walls.push({ x: 660, y: 180, w: 80, h: 40 });
-
-  // ============ WEST WING — Mine Tunnels ============
-  // Irregular corridors on the left
-  walls.push({ x: 40, y: 200, w: 20, h: 400 });    // far west wall
-  walls.push({ x: 40, y: 200, w: 200, h: 20 });    // top wall
-  walls.push({ x: 40, y: 580, w: 200, h: 20 });    // bottom wall
-  walls.push({ x: 220, y: 200, w: 20, h: 120 });   // inner wall top
-  walls.push({ x: 220, y: 480, w: 20, h: 120 });   // inner wall bottom (gap for passage)
-  // Rubble/pillars inside
-  walls.push({ x: 100, y: 300, w: 30, h: 30 });
-  walls.push({ x: 160, y: 420, w: 24, h: 24 });
-  walls.push({ x: 80, y: 500, w: 28, h: 28 });
-
-  // West corridor connecting to center
-  walls.push({ x: 240, y: 370, w: 180, h: 16 });   // corridor north wall
-  walls.push({ x: 240, y: 420, w: 180, h: 16 });   // corridor south wall
-
-  // ============ EAST WING — Ritual Chamber ============
-  // Large room on the right
-  walls.push({ x: 1000, y: 250, w: 20, h: 340 });   // west wall
-  walls.push({ x: 1000, y: 250, w: 340, h: 20 });   // north wall
-  walls.push({ x: 1320, y: 250, w: 20, h: 340 });   // east wall
-  walls.push({ x: 1000, y: 570, w: 140, h: 20 });   // south wall left
-  walls.push({ x: 1200, y: 570, w: 140, h: 20 });   // south wall right (gap)
-  // Ritual circle pillars (octagon pattern)
-  walls.push({ x: 1120, y: 320, w: 20, h: 20 });
-  walls.push({ x: 1200, y: 320, w: 20, h: 20 });
-  walls.push({ x: 1240, y: 380, w: 20, h: 20 });
-  walls.push({ x: 1240, y: 460, w: 20, h: 20 });
-  walls.push({ x: 1200, y: 520, w: 20, h: 20 });
-  walls.push({ x: 1120, y: 520, w: 20, h: 20 });
-  walls.push({ x: 1080, y: 460, w: 20, h: 20 });
-  walls.push({ x: 1080, y: 380, w: 20, h: 20 });
-  // Altar
-  walls.push({ x: 1140, y: 400, w: 60, h: 40 });
-
-  // East corridor connecting to center
-  walls.push({ x: 920, y: 400, w: 80, h: 16 });    // corridor north wall
-  walls.push({ x: 920, y: 450, w: 80, h: 16 });    // corridor south wall
-
-  // ============ SOUTHWEST — Crypt ============
-  walls.push({ x: 100, y: 680, w: 300, h: 20 });   // north wall
-  walls.push({ x: 100, y: 680, w: 20, h: 260 });   // west wall
-  walls.push({ x: 100, y: 920, w: 300, h: 20 });   // south wall
-  walls.push({ x: 380, y: 760, w: 20, h: 180 });   // east wall (gap at top for entrance)
-  // Coffins
-  walls.push({ x: 150, y: 740, w: 50, h: 24 });
-  walls.push({ x: 150, y: 820, w: 50, h: 24 });
-  walls.push({ x: 150, y: 900, w: 50, h: 24 });
-  walls.push({ x: 300, y: 740, w: 50, h: 24 });
-  walls.push({ x: 300, y: 820, w: 50, h: 24 });
-
-  // ============ SOUTHEAST — Arena Pit ============
-  walls.push({ x: 900, y: 700, w: 440, h: 20 });   // north wall
-  walls.push({ x: 900, y: 700, w: 20, h: 240 });   // west wall (gap at top)
-  walls.push({ x: 1320, y: 700, w: 20, h: 240 });  // east wall
-  walls.push({ x: 900, y: 920, w: 440, h: 20 });   // south wall
-  // Pit pillars
-  walls.push({ x: 980, y: 770, w: 24, h: 24 });
-  walls.push({ x: 1240, y: 770, w: 24, h: 24 });
-  walls.push({ x: 980, y: 870, w: 24, h: 24 });
-  walls.push({ x: 1240, y: 870, w: 24, h: 24 });
-
-  // ============ NORTH CORRIDORS ============
-  // Connecting north wing to east/west
-  walls.push({ x: 300, y: 160, w: 160, h: 16 });
-  walls.push({ x: 300, y: 220, w: 160, h: 16 });
-  walls.push({ x: 940, y: 160, w: 60, h: 16 });
-  walls.push({ x: 940, y: 220, w: 60, h: 16 });
-
-  // ============ SOUTH CORRIDOR ============
-  // Connecting SW crypt to center to SE arena
-  walls.push({ x: 420, y: 620, w: 460, h: 16 });   // corridor north wall
-  walls.push({ x: 420, y: 680, w: 460, h: 16 });   // corridor south wall
-
-  // ============ SCATTERED OBSTACLES ============
-  // Cover pillars in open areas
-  walls.push({ x: 460, y: 480, w: 20, h: 20 });
-  walls.push({ x: 540, y: 380, w: 20, h: 20 });
-  walls.push({ x: 840, y: 480, w: 20, h: 20 });
-  walls.push({ x: 700, y: 650, w: 20, h: 20 });
-  walls.push({ x: 500, y: 750, w: 24, h: 24 });
-  walls.push({ x: 700, y: 830, w: 24, h: 24 });
-
-  return { width: ARENA_W, height: ARENA_H, walls };
-}
+// generateDungeonArena removed — now using generateProceduralDungeon from DungeonGenerator.ts
 
 function rectContains(wall: { x: number; y: number; w: number; h: number }, px: number, py: number, margin: number): boolean {
   return px > wall.x - margin && px < wall.x + wall.w + margin &&
          py > wall.y - margin && py < wall.y + wall.h + margin;
 }
 
-function collidesWithWalls(walls: ArenaData['walls'], x: number, y: number, margin: number): boolean {
+function collidesWithWalls(walls: ArenaData['walls'], x: number, y: number, margin: number, arenaW = ARENA_W, arenaH = ARENA_H): boolean {
   for (const wall of walls) {
     if (rectContains(wall, x, y, margin)) return true;
   }
-  if (x < margin || x > ARENA_W - margin || y < margin || y > ARENA_H - margin) return true;
+  if (x < margin || x > arenaW - margin || y < margin || y > arenaH - margin) return true;
   return false;
 }
 
 function dist(x1: number, y1: number, x2: number, y2: number): number {
   return Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+}
+
+/** Check if a line segment from (x1,y1) to (x2,y2) intersects an AABB */
+function lineIntersectsRect(x1: number, y1: number, x2: number, y2: number, rx: number, ry: number, rw: number, rh: number): boolean {
+  // Liang-Barsky algorithm for line-segment vs AABB
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  const p = [-dx, dx, -dy, dy];
+  const q = [x1 - rx, rx + rw - x1, y1 - ry, ry + rh - y1];
+  let tmin = 0, tmax = 1;
+  for (let i = 0; i < 4; i++) {
+    if (p[i] === 0) {
+      if (q[i] < 0) return false;
+    } else {
+      const t = q[i] / p[i];
+      if (p[i] < 0) { if (t > tmin) tmin = t; }
+      else { if (t < tmax) tmax = t; }
+      if (tmin > tmax) return false;
+    }
+  }
+  return true;
+}
+
+/** Returns true if there's a clear line of sight (no wall blocks the path) */
+function hasLineOfSight(walls: ArenaData['walls'], x1: number, y1: number, x2: number, y2: number): boolean {
+  for (const wall of walls) {
+    if (lineIntersectsRect(x1, y1, x2, y2, wall.x, wall.y, wall.w, wall.h)) return false;
+  }
+  return true;
 }
 
 let nextProjectileId = 0;
@@ -230,12 +166,33 @@ export class DemoSession {
   private abilityCooldowns: Record<string, number> = {};
   private playerBuffs: BuffEffect[] = [];
   private stealthTimer = 0;
+  private totalXp = 0;
+  private totalGold = 0;
+  private playerLevel = 1;
+  private playerXp = 0;
+  private lootDrops: LootDrop[] = [];
+  private groundLoot: GroundLootItem[] = [];
+  private nextLootId = 0;
+  private zoneDangerLevel = 2;
+  private dashCooldownTicks = 0;
+  private dashActiveTicks = 0;
+  private dashDirX = 0;
+  private dashDirY = 0;
+  private stanceCooldownTicks = 0;
+  private equipBonuses = { atk: 0, def: 0, hp: 0 };
+  private dungeonLayout: DungeonLayout | null = null;
+  private exitPosition: { x: number; y: number } | null = null;
+  private exitRadius = 40;
 
-  constructor(callbacks: DemoCallbacks, zone = 'tomb_halls', playerClass?: PlayerClass) {
+  constructor(callbacks: DemoCallbacks, zone = 'tomb_halls', playerClass?: PlayerClass, customArena?: {
+    arena: ArenaData;
+    spawnPosition: { x: number; y: number };
+    enemies?: Array<{ name: string; archetype: string; element: string; x: number; y: number }>;
+    resources?: Array<{ resourceId: string; name: string; rarity: string; x: number; y: number }>;
+  }) {
     this.callbacks = callbacks;
     this.zone = zone;
     this.playerClass = playerClass || 'reaver';
-    this.arena = generateDungeonArena();
 
     const classDef = CLASS_DEFS[this.playerClass];
 
@@ -244,74 +201,145 @@ export class DemoSession {
       this.abilityCooldowns[ab.id] = 0;
     }
 
-    this.player = {
-      x: 700, y: 500,
-      hp: classDef.hp, maxHp: classDef.hp,
-      stamina: classDef.stamina, maxStamina: classDef.stamina,
-      stance: 'balanced',
-      facing: 'down',
-      buffs: [], debuffs: [],
-      attackCooldown: 0,
-      playerClass: this.playerClass,
-      abilityCooldowns: { ...this.abilityCooldowns },
-    };
+    if (customArena) {
+      // Use custom arena from builder
+      this.arena = customArena.arena;
+      this.exitPosition = customArena.arena.exitPosition || null;
+      this.dungeonLayout = null;
 
-    this.enemies = [
-      // Entrance Hall guards
-      this.makeEnemy('e1', 'Tomb Sentinel', 600, 500, 'guardian', 'shadow', 80, 40),
-      this.makeEnemy('e2', 'Tomb Sentinel', 800, 500, 'guardian', 'holy', 80, 40),
+      const spawnX = customArena.spawnPosition.x;
+      const spawnY = customArena.spawnPosition.y;
 
-      // North Tomb Chamber
-      this.makeEnemy('e3', 'Ancient Warden', 690, 250, 'guardian', 'holy', 120, 50),
-      this.makeEnemy('e4', 'Hollow Wraith', 580, 280, 'caster', 'ice', 55, 30),
-      this.makeEnemy('e5', 'Hollow Wraith', 800, 280, 'caster', 'shadow', 55, 30),
+      this.player = {
+        x: spawnX, y: spawnY,
+        hp: classDef.hp, maxHp: classDef.hp,
+        stamina: classDef.stamina, maxStamina: classDef.stamina,
+        stance: 'balanced',
+        facing: 'down',
+        buffs: [], debuffs: [],
+        attackCooldown: 0,
+        playerClass: this.playerClass,
+        abilityCooldowns: { ...this.abilityCooldowns },
+      };
 
-      // West Mine Tunnels
-      this.makeEnemy('e6', 'Bone Brute', 130, 350, 'brute', 'fire', 100, 40),
-      this.makeEnemy('e7', 'Cave Stalker', 160, 500, 'assassin', 'shadow', 60, 35),
+      const zoneConfig = ZONES[zone] || ZONES['tomb_halls'];
+      this.zoneDangerLevel = zoneConfig.dangerLevel;
 
-      // East Ritual Chamber
-      this.makeEnemy('e8', 'Soul Leech', 1160, 480, 'caster', 'shadow', 65, 30),
-      this.makeEnemy('e9', 'Crypt Horror', 1100, 350, 'brute', 'none', 110, 40),
-      this.makeEnemy('e10', 'Dark Ritualist', 1200, 480, 'caster', 'fire', 70, 25),
+      this.enemies = [];
+      if (customArena.enemies) {
+        for (let i = 0; i < customArena.enemies.length; i++) {
+          const ce = customArena.enemies[i];
+          const hp = ce.archetype === 'boss' ? 80 : ce.archetype === 'guardian' ? 50 : 35;
+          const mob = zoneConfig.mobs[Math.floor(Math.random() * zoneConfig.mobs.length)];
+          this.enemies.push(this.makeEnemy(
+            `e${i}`, ce.name, ce.x, ce.y,
+            ce.archetype, ce.element, hp, 20 + Math.random() * 30, mob
+          ));
+        }
+      }
 
-      // Southwest Crypt
-      this.makeEnemy('e11', 'Grave Stalker', 250, 800, 'assassin', 'shadow', 60, 40),
-      this.makeEnemy('e12', 'Restless Dead', 200, 880, 'guardian', 'none', 75, 20),
+      this.resources = [];
+      if (customArena.resources) {
+        for (let i = 0; i < customArena.resources.length; i++) {
+          const cr = customArena.resources[i];
+          this.resources.push(this.makeResource(
+            `r${i}`, cr.resourceId, cr.name, cr.x, cr.y, cr.rarity
+          ));
+        }
+      }
+    } else {
+      // Generate procedural BSP dungeon
+      const layout = generateProceduralDungeon(ARENA_W, ARENA_H);
+      this.dungeonLayout = layout;
+      this.arena = layout.arena;
+      this.exitPosition = layout.exitPosition;
 
-      // Southeast Arena
-      this.makeEnemy('e13', 'Pit Champion', 1100, 810, 'brute', 'fire', 140, 50),
-      this.makeEnemy('e14', 'Arena Shade', 1200, 850, 'assassin', 'ice', 65, 45),
-    ];
+      // Player spawns at one of the 4 corners of the map
+      const corners = [
+        { x: 120, y: 120 },
+        { x: ARENA_W - 120, y: 120 },
+        { x: 120, y: ARENA_H - 120 },
+        { x: ARENA_W - 120, y: ARENA_H - 120 },
+      ];
+      // Pick a random corner, find nearest room to it for valid spawn
+      const corner = corners[Math.floor(Math.random() * corners.length)];
+      let spawnX = corner.x;
+      let spawnY = corner.y;
+      // Find nearest room to this corner for a guaranteed walkable position
+      let nearestRoom = layout.rooms[0];
+      let nearestDist = Infinity;
+      for (const room of layout.rooms) {
+        const d = dist(corner.x, corner.y, room.centerX, room.centerY);
+        if (d < nearestDist) {
+          nearestDist = d;
+          nearestRoom = room;
+        }
+      }
+      // Spawn at the edge of that room closest to the corner
+      spawnX = Math.max(nearestRoom.x + 30, Math.min(nearestRoom.x + nearestRoom.w - 30, corner.x));
+      spawnY = Math.max(nearestRoom.y + 30, Math.min(nearestRoom.y + nearestRoom.h - 30, corner.y));
 
-    this.resources = [
-      // Entrance area
-      this.makeResource('r1', 'iron_scraps', 'Iron Scraps', 580, 450, 'common'),
-      this.makeResource('r2', 'herbs', 'Shadow Herbs', 820, 550, 'common'),
+      this.player = {
+        x: spawnX, y: spawnY,
+        hp: classDef.hp, maxHp: classDef.hp,
+        stamina: classDef.stamina, maxStamina: classDef.stamina,
+        stance: 'balanced',
+        facing: 'down',
+        buffs: [], debuffs: [],
+        attackCooldown: 0,
+        playerClass: this.playerClass,
+        abilityCooldowns: { ...this.abilityCooldowns },
+      };
 
-      // North tomb
-      this.makeResource('r3', 'bone_dust', 'Bone Dust', 550, 130, 'common'),
-      this.makeResource('r4', 'ancient_coins', 'Ancient Coins', 850, 130, 'rare'),
+      const zoneConfig = ZONES[zone] || ZONES['tomb_halls'];
+      this.zoneDangerLevel = zoneConfig.dangerLevel;
 
-      // West mines
-      this.makeResource('r5', 'dark_iron', 'Dark Iron', 80, 280, 'rare'),
-      this.makeResource('r6', 'iron_scraps', 'Iron Scraps', 180, 550, 'common'),
+      // Get spawnable rooms (not start room)
+      const spawnRooms = layout.rooms.filter(r => !r.isStart);
 
-      // East ritual chamber
-      this.makeResource('r7', 'gems', 'Ritual Gems', 1160, 350, 'legendary'),
-      this.makeResource('r8', 'ember_core', 'Ember Core', 1280, 500, 'rare'),
+      // Spawn 28-38 enemies distributed across rooms (scaled for bigger map)
+      const numEnemies = 28 + Math.floor(Math.random() * 11);
+      this.enemies = [];
+      for (let i = 0; i < numEnemies; i++) {
+        const mob = zoneConfig.mobs[Math.floor(Math.random() * zoneConfig.mobs.length)];
+        const realtimeHp = Math.round(Math.sqrt(mob.hp) * 8);
 
-      // Southwest crypt
-      this.makeResource('r9', 'bone_dust', 'Ancient Bones', 350, 860, 'common'),
-      this.makeResource('r10', 'herbs', 'Tomb Moss', 140, 760, 'rare'),
+        // Pick a room — weight exit room higher for guards
+        let room: Room;
+        if (i < 4 && layout.exitRoom) {
+          room = layout.exitRoom; // First few enemies guard the exit
+        } else {
+          room = spawnRooms[Math.floor(Math.random() * spawnRooms.length)] || layout.rooms[0];
+        }
 
-      // Southeast arena
-      this.makeResource('r11', 'ancient_coins', 'Champion\'s Hoard', 1100, 900, 'legendary'),
-      this.makeResource('r12', 'cursed_steel', 'Cursed Steel', 960, 760, 'rare'),
-    ];
+        // Spawn within the room bounds
+        let ex: number, ey: number;
+        let attempts = 0;
+        do {
+          ex = room.x + 30 + Math.random() * (room.w - 60);
+          ey = room.y + 30 + Math.random() * (room.h - 60);
+          attempts++;
+        } while (
+          collidesWithWalls(this.arena.walls, ex, ey, 30, this.arena.width, this.arena.height) &&
+          attempts < 20
+        );
+
+        const patrolRadius = 20 + Math.random() * 40;
+        this.enemies.push(this.makeEnemy(
+          `e${i}`, mob.name, ex, ey,
+          mob.archetype || 'brute',
+          mob.element || 'none',
+          realtimeHp, patrolRadius,
+          mob
+        ));
+      }
+
+      // No resources yet — just enemies
+      this.resources = [];
+    }
   }
 
-  private makeEnemy(id: string, name: string, x: number, y: number, archetype: string, element: string, maxHp: number, patrolRadius: number): DemoEnemy {
+  private makeEnemy(id: string, name: string, x: number, y: number, archetype: string, element: string, maxHp: number, patrolRadius: number, mob?: Mob): DemoEnemy {
     return {
       state: {
         id, name, x, y,
@@ -330,6 +358,7 @@ export class DemoSession {
       taunted: false,
       tauntTimer: 0,
       dots: [],
+      mob,
     };
   }
 
@@ -357,6 +386,15 @@ export class DemoSession {
       clearInterval(this.interval);
       this.interval = null;
     }
+  }
+
+  setEquipBonuses(bonuses: { atk: number; def: number; hp: number }) {
+    const oldHpBonus = this.equipBonuses.hp;
+    this.equipBonuses = { ...bonuses };
+    // Adjust maxHp and clamp current hp
+    const baseHp = this.player.maxHp - oldHpBonus;
+    this.player.maxHp = baseHp + bonuses.hp;
+    this.player.hp = Math.min(this.player.hp, this.player.maxHp);
   }
 
   private get classDef() {
@@ -387,14 +425,59 @@ export class DemoSession {
     this.tick++;
     const input = this.lastInput;
 
-    // Handle stance change
-    if (input.stanceChange) {
+    // Stance cooldown tick
+    if (this.stanceCooldownTicks > 0) this.stanceCooldownTicks--;
+
+    // Handle stance change (with cooldown)
+    if (input.stanceChange && this.stanceCooldownTicks <= 0) {
       this.player.stance = input.stanceChange;
+      this.stanceCooldownTicks = STANCE_COOLDOWN;
       this.lastInput.stanceChange = null;
+    } else if (input.stanceChange) {
+      this.lastInput.stanceChange = null; // discard blocked change
     }
 
-    // Move player
-    if (input.moveX !== 0 || input.moveY !== 0) {
+    // Dash cooldown
+    if (this.dashCooldownTicks > 0) this.dashCooldownTicks--;
+
+    // Dash activation
+    if (input.dash && this.dashCooldownTicks <= 0 && this.dashActiveTicks <= 0) {
+      this.dashCooldownTicks = DASH_COOLDOWN;
+      this.dashActiveTicks = DASH_DURATION;
+      // Capture dash direction from movement or facing
+      if (input.moveX !== 0 || input.moveY !== 0) {
+        const len = Math.sqrt(input.moveX ** 2 + input.moveY ** 2);
+        this.dashDirX = input.moveX / len;
+        this.dashDirY = input.moveY / len;
+      } else {
+        const facingMap: Record<string, [number, number]> = {
+          up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0],
+        };
+        const [fx, fy] = facingMap[this.player.facing] || [0, -1];
+        this.dashDirX = fx;
+        this.dashDirY = fy;
+      }
+      this.lastInput.dash = false;
+    }
+
+    // Dash movement (overrides normal movement)
+    if (this.dashActiveTicks > 0) {
+      this.dashActiveTicks--;
+      const dashSpeed = PLAYER_SPEED * DASH_SPEED_MULT;
+      const newX = this.player.x + this.dashDirX * dashSpeed;
+      const newY = this.player.y + this.dashDirY * dashSpeed;
+      if (!collidesWithWalls(this.arena.walls, newX, newY, WALL_MARGIN)) {
+        this.player.x = newX;
+        this.player.y = newY;
+      } else if (!collidesWithWalls(this.arena.walls, newX, this.player.y, WALL_MARGIN)) {
+        this.player.x = newX;
+      } else if (!collidesWithWalls(this.arena.walls, this.player.x, newY, WALL_MARGIN)) {
+        this.player.y = newY;
+      }
+    }
+
+    // Move player (skip if dashing)
+    if (this.dashActiveTicks <= 0 && (input.moveX !== 0 || input.moveY !== 0)) {
       const len = Math.sqrt(input.moveX ** 2 + input.moveY ** 2);
       const nx = input.moveX / len;
       const ny = input.moveY / len;
@@ -468,11 +551,77 @@ export class DemoSession {
     // Gather resources
     this.updateGathering(input);
 
-    // Check victory
+    // Auto-pickup ground loot
+    for (const loot of this.groundLoot) {
+      if (loot.pickedUp) continue;
+      if (dist(this.player.x, this.player.y, loot.x, loot.y) < 30) {
+        loot.pickedUp = true;
+        if (loot.isHealing) {
+          const healed = loot.healAmount || Math.round(this.player.maxHp * 0.15);
+          this.player.hp = Math.min(this.player.maxHp, this.player.hp + healed);
+          this.callbacks.onEvent({
+            type: 'heal',
+            targetId: 'player',
+            value: healed,
+            x: loot.x,
+            y: loot.y,
+          });
+        } else {
+          this.callbacks.onEvent({
+            type: 'loot_pickup',
+            text: loot.itemName,
+            rarity: loot.rarity,
+            x: loot.x,
+            y: loot.y,
+            itemName: loot.itemName,
+          });
+        }
+      }
+    }
+
+    // Check exit portal — player walks into the exit to advance
+    if (this.exitPosition) {
+      const exitDist = dist(this.player.x, this.player.y, this.exitPosition.x, this.exitPosition.y);
+      if (exitDist < this.exitRadius) {
+        // Auto-collect remaining loot
+        for (const loot of this.groundLoot) {
+          if (!loot.pickedUp) loot.pickedUp = true;
+        }
+        const zoneConfig = ZONES[this.zone] || ZONES['tomb_halls'];
+        const nextZone = zoneConfig.connectedZones?.[0] || undefined;
+        this.stop();
+        this.callbacks.onEnd('victory', {
+          xpGained: this.totalXp,
+          goldGained: this.totalGold,
+          itemsDropped: this.lootDrops.map(d => ({ itemName: d.itemName, rarity: d.rarity })),
+          xpCapped: false,
+          playerLevel: 1,
+          playerLevelEnd: this.playerLevel,
+          nextZone,
+        });
+        return;
+      }
+    }
+
+    // Check victory (all enemies dead — fallback win condition)
     const aliveEnemies = this.enemies.filter(e => e.state.hp > 0);
     if (aliveEnemies.length === 0) {
+      // Auto-collect remaining loot
+      for (const loot of this.groundLoot) {
+        if (!loot.pickedUp) loot.pickedUp = true;
+      }
+      const zoneConfig = ZONES[this.zone] || ZONES['tomb_halls'];
+      const nextZone = zoneConfig.connectedZones?.[0] || undefined;
       this.stop();
-      this.callbacks.onEnd('victory');
+      this.callbacks.onEnd('victory', {
+        xpGained: this.totalXp,
+        goldGained: this.totalGold,
+        itemsDropped: this.lootDrops.map(d => ({ itemName: d.itemName, rarity: d.rarity })),
+        xpCapped: false,
+        playerLevel: 1,
+        playerLevelEnd: this.playerLevel,
+        nextZone,
+      });
       return;
     }
 
@@ -755,7 +904,7 @@ export class DemoSession {
       }
 
       // Remove if out of bounds
-      if (proj.x < -50 || proj.x > ARENA_W + 50 || proj.y < -50 || proj.y > ARENA_H + 50) {
+      if (proj.x < -50 || proj.x > this.arena.width + 50 || proj.y < -50 || proj.y > this.arena.height + 50) {
         toRemove.push(proj.id);
       }
     }
@@ -815,9 +964,10 @@ export class DemoSession {
   }
 
   private applyMeleeDamage(target: DemoEnemy, baseDamage: number, element: ElementType, isAoe: boolean) {
-    const stanceMod = this.player.stance === 'aggressive' ? 1.35 :
+    const atkBonus = 1 + (this.equipBonuses.atk * 0.05);
+    const stanceMod = (this.player.stance === 'aggressive' ? 1.35 :
                       this.player.stance === 'defensive' ? 0.7 :
-                      this.player.stance === 'evasive' ? 0.9 : 1.0;
+                      this.player.stance === 'evasive' ? 0.9 : 1.0) * atkBonus;
     const isCrit = (this.playerClass === 'shade' && Math.random() < 0.25) ||
                    (this.player.stance === 'aggressive' && Math.random() < 0.13);
 
@@ -857,6 +1007,91 @@ export class DemoSession {
         x: enemy.state.x,
         y: enemy.state.y,
       });
+      this.handleEnemyKill(enemy);
+    }
+  }
+
+  private handleEnemyKill(enemy: DemoEnemy) {
+    if (!enemy.mob) return;
+    const mob = enemy.mob;
+    const isBoss = mob.archetype === 'boss';
+
+    // XP with level penalty
+    const mobLevel = Math.max(1, Math.round(mob.hp / 50));
+    const levelDiff = this.playerLevel - mobLevel;
+    let xpPenalty = 1.0;
+    if (levelDiff > 3) xpPenalty = Math.max(0.1, 1 - (levelDiff - 3) * 0.2);
+    const xpGained = Math.round(mob.xp_reward * xpPenalty);
+    const goldGained = mob.gold_reward;
+
+    this.totalXp += xpGained;
+    this.totalGold += goldGained;
+    this.playerXp += xpGained;
+
+    // Check level up
+    const newLevel = getLevelForXp(this.playerXp);
+    if (newLevel > this.playerLevel) {
+      this.playerLevel = newLevel;
+      this.callbacks.onEvent({
+        type: 'level_up',
+        value: newLevel,
+        x: this.player.x,
+        y: this.player.y,
+      });
+    }
+
+    // Emit kill reward event
+    this.callbacks.onEvent({
+      type: 'kill_reward',
+      value: xpGained,
+      x: enemy.state.x,
+      y: enemy.state.y,
+      text: `+${xpGained} XP  +${goldGained}g`,
+    });
+
+    // Roll loot drops — only place equippable gear on the ground
+    const EQUIP_CATEGORIES = new Set(['weapon', 'armor', 'shield', 'accessory']);
+    const drops = rollLoot(mob, this.zoneDangerLevel, 3, isBoss);
+    for (const drop of drops) {
+      const itemDef = ITEM_MAP.get(drop.itemCode);
+      if (!itemDef || !EQUIP_CATEGORIES.has(itemDef.category)) continue;
+
+      this.lootDrops.push(drop);
+      const lootId = `loot_${this.nextLootId++}`;
+      this.groundLoot.push({
+        id: lootId,
+        itemCode: drop.itemCode,
+        itemName: drop.itemName,
+        rarity: drop.rarity,
+        x: enemy.state.x + (Math.random() - 0.5) * 30,
+        y: enemy.state.y + (Math.random() - 0.5) * 30,
+        pickedUp: false,
+      });
+
+      this.callbacks.onEvent({
+        type: 'loot_drop',
+        text: drop.itemName,
+        rarity: drop.rarity,
+        x: enemy.state.x,
+        y: enemy.state.y,
+      });
+    }
+
+    // 40% chance to spawn healing globule
+    if (Math.random() < 0.4) {
+      const healAmount = Math.round(this.player.maxHp * 0.15);
+      const healId = `loot_${this.nextLootId++}`;
+      this.groundLoot.push({
+        id: healId,
+        itemCode: 'healing_globule',
+        itemName: 'Healing Globule',
+        rarity: 'uncommon',
+        x: enemy.state.x + (Math.random() - 0.5) * 20,
+        y: enemy.state.y + (Math.random() - 0.5) * 20,
+        pickedUp: false,
+        isHealing: true,
+        healAmount,
+      });
     }
   }
 
@@ -883,6 +1118,7 @@ export class DemoSession {
             x: enemy.state.x,
             y: enemy.state.y,
           });
+          this.handleEnemyKill(enemy);
         }
       }
       return dot.remaining > 0 && enemy.state.hp > 0;
@@ -906,7 +1142,24 @@ export class DemoSession {
       return;
     }
 
-    if (d < effectiveAggro) {
+    const los = hasLineOfSight(this.arena.walls, enemy.state.x, enemy.state.y, this.player.x, this.player.y);
+
+    if (d < effectiveAggro && los) {
+      // Leash check — enemy too far from origin resets
+      const distFromOrigin = dist(enemy.state.x, enemy.state.y, enemy.patrolOriginX, enemy.patrolOriginY);
+      if (distFromOrigin > LEASH_DISTANCE && !enemy.taunted) {
+        enemy.state.hp = enemy.state.maxHp;
+        enemy.dots = [];
+        this.doPatrol(enemy);
+        this.callbacks.onEvent({
+          type: 'effect',
+          x: enemy.state.x,
+          y: enemy.state.y,
+          text: 'Resetting...',
+          sourceId: enemy.state.id,
+        });
+        return;
+      }
       enemy.state.aiState = d < ENEMY_ATTACK_RANGE ? 'attack' : 'chase';
       const dx = this.player.x - enemy.state.x;
       const dy = this.player.y - enemy.state.y;
@@ -924,7 +1177,7 @@ export class DemoSession {
 
       // Enemy attack
       if (enemy.attackCooldown > 0) enemy.attackCooldown--;
-      if (d < ENEMY_ATTACK_RANGE && enemy.attackCooldown <= 0) {
+      if (d < ENEMY_ATTACK_RANGE && enemy.attackCooldown <= 0 && los) {
         enemy.attackCooldown = ENEMY_ATTACK_COOLDOWN + Math.floor(Math.random() * 8);
         const defMod = this.player.stance === 'defensive' ? 0.6 :
                        this.player.stance === 'evasive' ? 0.8 : 1.0;
@@ -938,7 +1191,8 @@ export class DemoSession {
           return;
         }
 
-        let dmg = Math.round(ENEMY_ATTACK_DMG * defMod * this.getDamageReductionMultiplier() * (0.7 + Math.random() * 0.6));
+        const defReduction = Math.max(0.3, 1 - this.equipBonuses.def * 0.03);
+        let dmg = Math.round(ENEMY_ATTACK_DMG * defMod * defReduction * this.getDamageReductionMultiplier() * (0.7 + Math.random() * 0.6));
         this.player.hp = Math.max(0, this.player.hp - dmg);
 
         this.callbacks.onEvent({
@@ -966,6 +1220,7 @@ export class DemoSession {
           });
           if (enemy.state.hp <= 0) {
             this.callbacks.onEvent({ type: 'death', targetId: enemy.state.id, x: enemy.state.x, y: enemy.state.y });
+            this.handleEnemyKill(enemy);
           }
         }
       }
@@ -1047,7 +1302,7 @@ export class DemoSession {
     for (const enemy of this.enemies) {
       if (enemy.state.hp <= 0) continue;
       const d = dist(this.player.x, this.player.y, enemy.state.x, enemy.state.y);
-      if (d < minDist) {
+      if (d < minDist && hasLineOfSight(this.arena.walls, this.player.x, this.player.y, enemy.state.x, enemy.state.y)) {
         minDist = d;
         nearest = enemy;
       }
@@ -1067,9 +1322,12 @@ export class DemoSession {
         ...this.player,
         abilityCooldowns: cooldowns,
         buffs: this.playerBuffs.map(b => ({ id: b.id, name: b.effect, type: 'buff' as const, stat: b.effect, value: b.value, duration: b.remaining })),
+        dashCooldown: this.dashCooldownTicks / DASH_COOLDOWN,
+        stanceCooldown: this.stanceCooldownTicks / STANCE_COOLDOWN,
       },
       enemies: this.enemies.filter(e => e.state.hp > 0).map(e => ({ ...e.state })),
       resources: this.resources.map(r => ({ ...r })),
+      groundLoot: this.groundLoot.filter(l => !l.pickedUp),
       projectiles: this.projectiles.map(p => ({
         id: p.id,
         x: p.x,
@@ -1081,6 +1339,9 @@ export class DemoSession {
       arena: this.arena,
       zone: this.zone,
       tick: this.tick,
+      playerLevel: this.playerLevel,
+      playerXp: this.playerXp,
+      playerXpToNext: xpRequiredForLevel(this.playerLevel + 1),
     });
   }
 }

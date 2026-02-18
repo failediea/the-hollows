@@ -1,0 +1,1143 @@
+{
+  "pack": "Cube World",
+  "version": "Aug 2023",
+  "author": "Quaternius",
+  "basePath": "assets/Cube World - Aug 2023",
+  "totalAssets": 107,
+  "categories": {
+    "Animals": {
+      "count": 9,
+      "description": "Rigged and animated farm/wild animals",
+      "assets": [
+        {
+          "name": "Cat",
+          "file": "Cat.gltf",
+          "path": "Animals/glTF/Cat.gltf",
+          "format": "gltf",
+          "animated": true,
+          "meshCount": 1,
+          "nodeCount": 11,
+          "animations": ["Death", "Headbutt", "Idle", "Idle_Eating", "Jump_Loop", "Jump_Start", "Run", "Walk"],
+          "materials": ["Atlas"]
+        },
+        {
+          "name": "Chick",
+          "file": "Chick.gltf",
+          "path": "Animals/glTF/Chick.gltf",
+          "format": "gltf",
+          "animated": true,
+          "meshCount": 1,
+          "nodeCount": 6,
+          "animations": ["Attack", "Death", "Idle", "Idle_Peck", "Run"],
+          "materials": ["Atlas"]
+        },
+        {
+          "name": "Chicken",
+          "file": "Chicken.gltf",
+          "path": "Animals/glTF/Chicken.gltf",
+          "format": "gltf",
+          "animated": true,
+          "meshCount": 1,
+          "nodeCount": 6,
+          "animations": ["Attack", "Death", "Idle", "Idle_Peck", "Run"],
+          "materials": ["Atlas"]
+        },
+        {
+          "name": "Dog",
+          "file": "Dog.gltf",
+          "path": "Animals/glTF/Dog.gltf",
+          "format": "gltf",
+          "animated": true,
+          "meshCount": 1,
+          "nodeCount": 11,
+          "animations": ["Death", "Headbutt", "Idle", "Idle_Eating", "Jump_Loop", "Jump_Start", "Run", "Walk"],
+          "materials": ["Atlas"]
+        },
+        {
+          "name": "Horse",
+          "file": "Horse.gltf",
+          "path": "Animals/glTF/Horse.gltf",
+          "format": "gltf",
+          "animated": true,
+          "meshCount": 1,
+          "nodeCount": 12,
+          "animations": ["Death", "Headbutt", "Idle", "Idle_Eating", "Jump_Loop", "Jump_Start", "Run", "Walk"],
+          "materials": ["Atlas"]
+        },
+        {
+          "name": "Pig",
+          "file": "Pig.gltf",
+          "path": "Animals/glTF/Pig.gltf",
+          "format": "gltf",
+          "animated": true,
+          "meshCount": 1,
+          "nodeCount": 10,
+          "animations": ["Death", "Headbutt", "Idle", "Idle_Eating", "Jump_Loop", "Jump_Start", "Run", "Walk"],
+          "materials": ["Atlas"]
+        },
+        {
+          "name": "Raccoon",
+          "file": "Raccoon.gltf",
+          "path": "Animals/glTF/Raccoon.gltf",
+          "format": "gltf",
+          "animated": true,
+          "meshCount": 1,
+          "nodeCount": 11,
+          "animations": ["Death", "Headbutt", "Idle", "Idle_Eating", "Jump_Loop", "Jump_Start", "Run", "Walk"],
+          "materials": ["Atlas.002"]
+        },
+        {
+          "name": "Sheep",
+          "file": "Sheep.gltf",
+          "path": "Animals/glTF/Sheep.gltf",
+          "format": "gltf",
+          "animated": true,
+          "meshCount": 1,
+          "nodeCount": 11,
+          "animations": ["Death", "Headbutt", "Idle", "Idle_Eating", "Jump_Loop", "Jump_Start", "Run", "Walk"],
+          "materials": ["Atlas"]
+        },
+        {
+          "name": "Wolf",
+          "file": "Wolf.gltf",
+          "path": "Animals/glTF/Wolf.gltf",
+          "format": "gltf",
+          "animated": true,
+          "meshCount": 1,
+          "nodeCount": 11,
+          "animations": ["Death", "Headbutt", "Idle", "Idle_Eating", "Jump_Loop", "Jump_Start", "Run", "Walk"],
+          "materials": ["Atlas"]
+        }
+      ]
+    },
+    "Blocks": {
+      "count": 15,
+      "description": "Standard cube blocks with various material textures",
+      "assets": [
+        {
+          "name": "Block_Blank",
+          "file": "Block_Blank.gltf",
+          "path": "Blocks/glTF/Block_Blank.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Atlas"]
+        },
+        {
+          "name": "Block_Brick",
+          "file": "Block_Brick.gltf",
+          "path": "Blocks/glTF/Block_Brick.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Atlas"]
+        },
+        {
+          "name": "Block_Cheese",
+          "file": "Block_Cheese.gltf",
+          "path": "Blocks/glTF/Block_Cheese.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Atlas"]
+        },
+        {
+          "name": "Block_Coal",
+          "file": "Block_Coal.gltf",
+          "path": "Blocks/glTF/Block_Coal.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Atlas"]
+        },
+        {
+          "name": "Block_Crate",
+          "file": "Block_Crate.gltf",
+          "path": "Blocks/glTF/Block_Crate.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Atlas"]
+        },
+        {
+          "name": "Block_Crystal",
+          "file": "Block_Crystal.gltf",
+          "path": "Blocks/glTF/Block_Crystal.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Atlas"]
+        },
+        {
+          "name": "Block_Diamond",
+          "file": "Block_Diamond.gltf",
+          "path": "Blocks/glTF/Block_Diamond.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Atlas"]
+        },
+        {
+          "name": "Block_Dirt",
+          "file": "Block_Dirt.gltf",
+          "path": "Blocks/glTF/Block_Dirt.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Atlas"]
+        },
+        {
+          "name": "Block_Grass",
+          "file": "Block_Grass.gltf",
+          "path": "Blocks/glTF/Block_Grass.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Atlas"]
+        },
+        {
+          "name": "Block_GreyBricks",
+          "file": "Block_GreyBricks.gltf",
+          "path": "Blocks/glTF/Block_GreyBricks.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Atlas"]
+        },
+        {
+          "name": "Block_Ice",
+          "file": "Block_Ice.gltf",
+          "path": "Blocks/glTF/Block_Ice.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Atlas"]
+        },
+        {
+          "name": "Block_Metal",
+          "file": "Block_Metal.gltf",
+          "path": "Blocks/glTF/Block_Metal.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Atlas"]
+        },
+        {
+          "name": "Block_Snow",
+          "file": "Block_Snow.gltf",
+          "path": "Blocks/glTF/Block_Snow.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Atlas"]
+        },
+        {
+          "name": "Block_Stone",
+          "file": "Block_Stone.gltf",
+          "path": "Blocks/glTF/Block_Stone.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Atlas"]
+        },
+        {
+          "name": "Block_WoodPlanks",
+          "file": "Block_WoodPlanks.gltf",
+          "path": "Blocks/glTF/Block_WoodPlanks.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Atlas"]
+        }
+      ]
+    },
+    "Characters": {
+      "count": 4,
+      "description": "Playable character models, fully rigged with extensive animation sets",
+      "assets": [
+        {
+          "name": "Character_Female_1",
+          "file": "Character_Female_1.gltf",
+          "path": "Characters/glTF/Character_Female_1.gltf",
+          "format": "gltf",
+          "animated": true,
+          "meshCount": 1,
+          "nodeCount": 25,
+          "animations": ["Death", "Duck", "HitReact", "Idle", "Idle_Attack", "Idle_Hold", "Jump", "Jump_Idle", "Jump_Land", "No", "Punch", "Run", "Run_Attack", "Run_Hold", "Walk", "Walk_Hold", "Wave", "Yes"],
+          "materials": ["Atlas"]
+        },
+        {
+          "name": "Character_Female_2",
+          "file": "Character_Female_2.gltf",
+          "path": "Characters/glTF/Character_Female_2.gltf",
+          "format": "gltf",
+          "animated": true,
+          "meshCount": 1,
+          "nodeCount": 25,
+          "animations": ["Death", "Duck", "HitReact", "Idle", "Idle_Attack", "Idle_Hold", "Jump", "Jump_Idle", "Jump_Land", "No", "Punch", "Run", "Run_Attack", "Run_Hold", "Walk", "Walk_Hold", "Wave", "Yes"],
+          "materials": ["Atlas"]
+        },
+        {
+          "name": "Character_Male_1",
+          "file": "Character_Male_1.gltf",
+          "path": "Characters/glTF/Character_Male_1.gltf",
+          "format": "gltf",
+          "animated": true,
+          "meshCount": 1,
+          "nodeCount": 25,
+          "animations": ["Death", "Duck", "HitReact", "Idle", "Idle_Attack", "Idle_Hold", "Jump", "Jump_Idle", "Jump_Land", "No", "Punch", "Run", "Run_Attack", "Run_Hold", "Walk", "Walk_Hold", "Wave", "Yes"],
+          "materials": ["Atlas"]
+        },
+        {
+          "name": "Character_Male_2",
+          "file": "Character_Male_2.gltf",
+          "path": "Characters/glTF/Character_Male_2.gltf",
+          "format": "gltf",
+          "animated": true,
+          "meshCount": 1,
+          "nodeCount": 25,
+          "animations": ["Death", "Duck", "HitReact", "Idle", "Idle_Attack", "Idle_Hold", "Jump", "Jump_Idle", "Jump_Land", "No", "Punch", "Run", "Run_Attack", "Run_Hold", "Walk", "Walk_Hold", "Wave", "Yes"],
+          "materials": ["Atlas"]
+        }
+      ]
+    },
+    "Enemies": {
+      "count": 9,
+      "description": "Hostile NPC models with combat animations",
+      "assets": [
+        {
+          "name": "Demon",
+          "file": "Demon.gltf",
+          "path": "Enemies/glTF/Demon.gltf",
+          "format": "gltf",
+          "animated": true,
+          "meshCount": 1,
+          "nodeCount": 9,
+          "animations": ["Attack", "Death", "HitRecieve", "Idle", "Jump", "Run", "Walk"],
+          "materials": ["Atlas"]
+        },
+        {
+          "name": "Giant",
+          "file": "Giant.gltf",
+          "path": "Enemies/glTF/Giant.gltf",
+          "format": "gltf",
+          "animated": true,
+          "meshCount": 1,
+          "nodeCount": 9,
+          "animations": ["Attack", "Death", "HitRecieve", "Idle", "Jump", "Run", "Walk"],
+          "materials": ["Atlas.001"]
+        },
+        {
+          "name": "Goblin",
+          "file": "Goblin.gltf",
+          "path": "Enemies/glTF/Goblin.gltf",
+          "format": "gltf",
+          "animated": true,
+          "meshCount": 1,
+          "nodeCount": 9,
+          "animations": ["Attack", "Death", "HitRecieve", "Idle", "Jump", "Run", "Walk"],
+          "materials": ["Atlas"]
+        },
+        {
+          "name": "Hedgehog",
+          "file": "Hedgehog.gltf",
+          "path": "Enemies/glTF/Hedgehog.gltf",
+          "format": "gltf",
+          "animated": true,
+          "meshCount": 1,
+          "nodeCount": 4,
+          "animations": ["Attack", "Death", "Idle"],
+          "materials": ["Atlas"]
+        },
+        {
+          "name": "Skeleton",
+          "file": "Skeleton.gltf",
+          "path": "Enemies/glTF/Skeleton.gltf",
+          "format": "gltf",
+          "animated": true,
+          "meshCount": 1,
+          "nodeCount": 9,
+          "animations": ["Attack", "Death", "HitRecieve", "Idle", "Jump", "Run", "Walk"],
+          "materials": ["Atlas"]
+        },
+        {
+          "name": "Skeleton_Armor",
+          "file": "Skeleton_Armor.gltf",
+          "path": "Enemies/glTF/Skeleton_Armor.gltf",
+          "format": "gltf",
+          "animated": true,
+          "meshCount": 2,
+          "nodeCount": 10,
+          "animations": ["Attack", "Death", "HitRecieve", "Idle", "Jump", "Run", "Walk"],
+          "materials": ["Atlas.003", "Material.002", "Atlas"]
+        },
+        {
+          "name": "Wizard",
+          "file": "Wizard.gltf",
+          "path": "Enemies/glTF/Wizard.gltf",
+          "format": "gltf",
+          "animated": true,
+          "meshCount": 1,
+          "nodeCount": 9,
+          "animations": ["Attack", "Death", "HitRecieve", "Idle", "Jump", "Run", "Walk"],
+          "materials": ["Atlas"]
+        },
+        {
+          "name": "Yeti",
+          "file": "Yeti.gltf",
+          "path": "Enemies/glTF/Yeti.gltf",
+          "format": "gltf",
+          "animated": true,
+          "meshCount": 1,
+          "nodeCount": 9,
+          "animations": ["Attack", "Death", "HitRecieve", "Idle", "Jump", "Run", "Walk"],
+          "materials": ["Atlas"]
+        },
+        {
+          "name": "Zombie",
+          "file": "Zombie.gltf",
+          "path": "Enemies/glTF/Zombie.gltf",
+          "format": "gltf",
+          "animated": true,
+          "meshCount": 1,
+          "nodeCount": 9,
+          "animations": ["Attack", "Death", "HitRecieve", "Idle", "Jump", "Run", "Walk"],
+          "materials": ["Atlas"]
+        }
+      ]
+    },
+    "Environment": {
+      "count": 36,
+      "description": "Static props: trees, rocks, flora, rails, fences, chests, and interactive objects",
+      "assets": [
+        {
+          "name": "Bamboo",
+          "file": "Bamboo.gltf",
+          "path": "Environment/glTF/Bamboo.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Atlas"]
+        },
+        {
+          "name": "Bamboo_Mid",
+          "file": "Bamboo_Mid.gltf",
+          "path": "Environment/glTF/Bamboo_Mid.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Atlas"]
+        },
+        {
+          "name": "Bamboo_Small",
+          "file": "Bamboo_Small.gltf",
+          "path": "Environment/glTF/Bamboo_Small.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Atlas"]
+        },
+        {
+          "name": "Bush",
+          "file": "Bush.gltf",
+          "path": "Environment/glTF/Bush.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Atlas"]
+        },
+        {
+          "name": "Button",
+          "file": "Button.gltf",
+          "path": "Environment/glTF/Button.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Atlas"]
+        },
+        {
+          "name": "Cart",
+          "file": "Cart.gltf",
+          "path": "Environment/glTF/Cart.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Atlas"]
+        },
+        {
+          "name": "Chest_Closed",
+          "file": "Chest_Closed.gltf",
+          "path": "Environment/glTF/Chest_Closed.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Atlas"]
+        },
+        {
+          "name": "Chest_Open",
+          "file": "Chest_Open.gltf",
+          "path": "Environment/glTF/Chest_Open.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Atlas.001"]
+        },
+        {
+          "name": "Crystal_Big",
+          "file": "Crystal_Big.gltf",
+          "path": "Environment/glTF/Crystal_Big.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Atlas"]
+        },
+        {
+          "name": "Crystal_Small",
+          "file": "Crystal_Small.gltf",
+          "path": "Environment/glTF/Crystal_Small.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Atlas"]
+        },
+        {
+          "name": "DeadTree_1",
+          "file": "DeadTree_1.gltf",
+          "path": "Environment/glTF/DeadTree_1.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Atlas"]
+        },
+        {
+          "name": "DeadTree_2",
+          "file": "DeadTree_2.gltf",
+          "path": "Environment/glTF/DeadTree_2.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Atlas"]
+        },
+        {
+          "name": "DeadTree_3",
+          "file": "DeadTree_3.gltf",
+          "path": "Environment/glTF/DeadTree_3.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Atlas"]
+        },
+        {
+          "name": "Door_Closed",
+          "file": "Door_Closed.gltf",
+          "path": "Environment/glTF/Door_Closed.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Material.007", "Atlas"]
+        },
+        {
+          "name": "Fence_Center",
+          "file": "Fence_Center.gltf",
+          "path": "Environment/glTF/Fence_Center.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Atlas"]
+        },
+        {
+          "name": "Fence_Corner",
+          "file": "Fence_Corner.gltf",
+          "path": "Environment/glTF/Fence_Corner.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Atlas"]
+        },
+        {
+          "name": "Fence_End",
+          "file": "Fence_End.gltf",
+          "path": "Environment/glTF/Fence_End.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Atlas"]
+        },
+        {
+          "name": "Fence_T",
+          "file": "Fence_T.gltf",
+          "path": "Environment/glTF/Fence_T.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Atlas"]
+        },
+        {
+          "name": "Flowers_1",
+          "file": "Flowers_1.gltf",
+          "path": "Environment/glTF/Flowers_1.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Material.001", "Material.020", "Atlas"]
+        },
+        {
+          "name": "Flowers_2",
+          "file": "Flowers_2.gltf",
+          "path": "Environment/glTF/Flowers_2.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Atlas"]
+        },
+        {
+          "name": "Grass_Big",
+          "file": "Grass_Big.gltf",
+          "path": "Environment/glTF/Grass_Big.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Atlas"]
+        },
+        {
+          "name": "Grass_Small",
+          "file": "Grass_Small.gltf",
+          "path": "Environment/glTF/Grass_Small.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Atlas"]
+        },
+        {
+          "name": "Key",
+          "file": "Key.gltf",
+          "path": "Environment/glTF/Key.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Atlas"]
+        },
+        {
+          "name": "Lever_Left",
+          "file": "Lever_Left.gltf",
+          "path": "Environment/glTF/Lever_Left.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Atlas"]
+        },
+        {
+          "name": "Lever_Right",
+          "file": "Lever_Right.gltf",
+          "path": "Environment/glTF/Lever_Right.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Atlas"]
+        },
+        {
+          "name": "Mushroom",
+          "file": "Mushroom.gltf",
+          "path": "Environment/glTF/Mushroom.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Atlas"]
+        },
+        {
+          "name": "Plant_2",
+          "file": "Plant_2.gltf",
+          "path": "Environment/glTF/Plant_2.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Atlas"]
+        },
+        {
+          "name": "Plant_3",
+          "file": "Plant_3.gltf",
+          "path": "Environment/glTF/Plant_3.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Atlas"]
+        },
+        {
+          "name": "Rail_Corner",
+          "file": "Rail_Corner.gltf",
+          "path": "Environment/glTF/Rail_Corner.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Material.002", "Atlas"]
+        },
+        {
+          "name": "Rail_Incline",
+          "file": "Rail_Incline.gltf",
+          "path": "Environment/glTF/Rail_Incline.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Atlas"]
+        },
+        {
+          "name": "Rail_Straight",
+          "file": "Rail_Straight.gltf",
+          "path": "Environment/glTF/Rail_Straight.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Material.002", "Atlas"]
+        },
+        {
+          "name": "Rock1",
+          "file": "Rock1.gltf",
+          "path": "Environment/glTF/Rock1.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Atlas"]
+        },
+        {
+          "name": "Rock2",
+          "file": "Rock2.gltf",
+          "path": "Environment/glTF/Rock2.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Atlas"]
+        },
+        {
+          "name": "Tree_1",
+          "file": "Tree_1.gltf",
+          "path": "Environment/glTF/Tree_1.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Atlas"]
+        },
+        {
+          "name": "Tree_2",
+          "file": "Tree_2.gltf",
+          "path": "Environment/glTF/Tree_2.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Atlas"]
+        },
+        {
+          "name": "Tree_3",
+          "file": "Tree_3.gltf",
+          "path": "Environment/glTF/Tree_3.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Atlas"]
+        }
+      ]
+    },
+    "Pixel Blocks": {
+      "count": 18,
+      "description": "Pixel-art textured blocks using a separate pixel art atlas",
+      "assets": [
+        {
+          "name": "Block_Blank",
+          "file": "Block_Blank.gltf",
+          "path": "Pixel Blocks/glTF/Block_Blank.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Blocks_Pixelart"]
+        },
+        {
+          "name": "Block_Square",
+          "file": "Block_Square.gltf",
+          "path": "Pixel Blocks/glTF/Block_Square.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Blocks_Pixelart"]
+        },
+        {
+          "name": "Bricks_Dark",
+          "file": "Bricks_Dark.gltf",
+          "path": "Pixel Blocks/glTF/Bricks_Dark.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Blocks_Pixelart"]
+        },
+        {
+          "name": "Bricks_Grey",
+          "file": "Bricks_Grey.gltf",
+          "path": "Pixel Blocks/glTF/Bricks_Grey.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Blocks_Pixelart"]
+        },
+        {
+          "name": "Bricks_Red",
+          "file": "Bricks_Red.gltf",
+          "path": "Pixel Blocks/glTF/Bricks_Red.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Blocks_Pixelart"]
+        },
+        {
+          "name": "Bricks_Yellow",
+          "file": "Bricks_Yellow.gltf",
+          "path": "Pixel Blocks/glTF/Bricks_Yellow.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Blocks_Pixelart"]
+        },
+        {
+          "name": "Coal",
+          "file": "Coal.gltf",
+          "path": "Pixel Blocks/glTF/Coal.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Blocks_Pixelart"]
+        },
+        {
+          "name": "Diamond",
+          "file": "Diamond.gltf",
+          "path": "Pixel Blocks/glTF/Diamond.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Blocks_Pixelart"]
+        },
+        {
+          "name": "Dirt",
+          "file": "Dirt.gltf",
+          "path": "Pixel Blocks/glTF/Dirt.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Blocks_Pixelart"]
+        },
+        {
+          "name": "Exclamation",
+          "file": "Exclamation.gltf",
+          "path": "Pixel Blocks/glTF/Exclamation.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Blocks_Pixelart"]
+        },
+        {
+          "name": "Grass",
+          "file": "Grass.gltf",
+          "path": "Pixel Blocks/glTF/Grass.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Blocks_Pixelart"]
+        },
+        {
+          "name": "Ice",
+          "file": "Ice.gltf",
+          "path": "Pixel Blocks/glTF/Ice.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Blocks_Pixelart"]
+        },
+        {
+          "name": "Leaves",
+          "file": "Leaves.gltf",
+          "path": "Pixel Blocks/glTF/Leaves.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Blocks_Pixelart"]
+        },
+        {
+          "name": "QuestionMark",
+          "file": "QuestionMark.gltf",
+          "path": "Pixel Blocks/glTF/QuestionMark.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Blocks_Pixelart"]
+        },
+        {
+          "name": "Snow",
+          "file": "Snow.gltf",
+          "path": "Pixel Blocks/glTF/Snow.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Blocks_Pixelart"]
+        },
+        {
+          "name": "Stone",
+          "file": "Stone.gltf",
+          "path": "Pixel Blocks/glTF/Stone.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Blocks_Pixelart"]
+        },
+        {
+          "name": "Wood",
+          "file": "Wood.gltf",
+          "path": "Pixel Blocks/glTF/Wood.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Blocks_Pixelart"]
+        },
+        {
+          "name": "WoodPlanks",
+          "file": "WoodPlanks.gltf",
+          "path": "Pixel Blocks/glTF/WoodPlanks.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Blocks_Pixelart"]
+        }
+      ]
+    },
+    "Tools": {
+      "count": 16,
+      "description": "Weapons and tools in 4 material tiers: Wood, Stone, Gold, Diamond",
+      "assets": [
+        {
+          "name": "Axe_Diamond",
+          "file": "Axe_Diamond.gltf",
+          "path": "Tools/glTF/Axe_Diamond.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Atlas"]
+        },
+        {
+          "name": "Axe_Gold",
+          "file": "Axe_Gold.gltf",
+          "path": "Tools/glTF/Axe_Gold.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Atlas"]
+        },
+        {
+          "name": "Axe_Stone",
+          "file": "Axe_Stone.gltf",
+          "path": "Tools/glTF/Axe_Stone.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Atlas"]
+        },
+        {
+          "name": "Axe_Wood",
+          "file": "Axe_Wood.gltf",
+          "path": "Tools/glTF/Axe_Wood.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Atlas"]
+        },
+        {
+          "name": "Pickaxe_Diamond",
+          "file": "Pickaxe_Diamond.gltf",
+          "path": "Tools/glTF/Pickaxe_Diamond.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Atlas"]
+        },
+        {
+          "name": "Pickaxe_Gold",
+          "file": "Pickaxe_Gold.gltf",
+          "path": "Tools/glTF/Pickaxe_Gold.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Atlas"]
+        },
+        {
+          "name": "Pickaxe_Stone",
+          "file": "Pickaxe_Stone.gltf",
+          "path": "Tools/glTF/Pickaxe_Stone.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Atlas"]
+        },
+        {
+          "name": "Pickaxe_Wood",
+          "file": "Pickaxe_Wood.gltf",
+          "path": "Tools/glTF/Pickaxe_Wood.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Atlas"]
+        },
+        {
+          "name": "Shovel_Diamond",
+          "file": "Shovel_Diamond.gltf",
+          "path": "Tools/glTF/Shovel_Diamond.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Atlas"]
+        },
+        {
+          "name": "Shovel_Gold",
+          "file": "Shovel_Gold.gltf",
+          "path": "Tools/glTF/Shovel_Gold.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Atlas"]
+        },
+        {
+          "name": "Shovel_Stone",
+          "file": "Shovel_Stone.gltf",
+          "path": "Tools/glTF/Shovel_Stone.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Atlas"]
+        },
+        {
+          "name": "Shovel_Wood",
+          "file": "Shovel_Wood.gltf",
+          "path": "Tools/glTF/Shovel_Wood.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Atlas"]
+        },
+        {
+          "name": "Sword_Diamond",
+          "file": "Sword_Diamond.gltf",
+          "path": "Tools/glTF/Sword_Diamond.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Atlas"]
+        },
+        {
+          "name": "Sword_Gold",
+          "file": "Sword_Gold.gltf",
+          "path": "Tools/glTF/Sword_Gold.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Atlas"]
+        },
+        {
+          "name": "Sword_Stone",
+          "file": "Sword_Stone.gltf",
+          "path": "Tools/glTF/Sword_Stone.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Atlas"]
+        },
+        {
+          "name": "Sword_Wood",
+          "file": "Sword_Wood.gltf",
+          "path": "Tools/glTF/Sword_Wood.gltf",
+          "format": "gltf",
+          "animated": false,
+          "meshCount": 1,
+          "nodeCount": 1,
+          "materials": ["Atlas"]
+        }
+      ]
+    }
+  }
+}
